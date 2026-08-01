@@ -24,8 +24,8 @@
           "reasoning": true,
           "tool_call": true,
           "limit": {
-            "context": 32768,
-            "output": 8192
+            "context": 131072,
+            "output": 10240
           }
         }
       }
