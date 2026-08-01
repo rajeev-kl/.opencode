@@ -11,12 +11,21 @@
       },
       "models": {
         "ornith-1.0-35b": {
-          "name": "Ornith",
+          "name": "Ornith-35b",
           "reasoning": true,
           "tool_call": true,
           "limit": {
-            "context": 262144,
-            "output": 16386
+            "context": 131072,
+            "output": 10240
+          }
+        },
+        "ornith-1.0-9b": {
+          "name": "Ornith-9b",
+          "reasoning": true,
+          "tool_call": true,
+          "limit": {
+            "context": 32768,
+            "output": 8192
           }
         }
       }
@@ -26,15 +35,5 @@
     "./tools/cli-claude.ts",
     "./tools/cli-codex.ts",
     "./tools/cli-antigravity.ts"
-  ],
-
-  "agent": {
-    "Manager": {
-      "description": "Primary orchestrator — delegates to subagents and CLI agents. Entry point for all work.",
-      "mode": "primary"
-    },
-    "bga": {
-      "description": "background agent — handles delegated tasks from the Manager"
-    }
-  }
+  ]
 }

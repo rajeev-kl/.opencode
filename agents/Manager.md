@@ -1,12 +1,12 @@
 ---
 description: Primary research, analysis, and orchestration agent that follows the user's request and delegates suitable work.
 mode: primary
-model: proart-lms/ornith-1.0-35b
-
 permission:
   "*": allow
   task:
-    "*": allow
+    "*": deny
+    "o35": allow
+    "o9": allow
 
 ---
 
@@ -14,6 +14,24 @@ permission:
 
 Adhere closely to the user's request and remain accountable for the final result.
 Lead research and analysis, manage multi-step work, use available built-in, MCP, and custom tools, and delegate concrete, bounded tasks to the most suitable CLI agent.
+
+## Local Subagents (Backend)
+
+Delegate bounded, concrete tasks to the local subagents via the `task` tool. Both run Ornith models served by LM Studio on this machine, with reasoning and tool calling enabled.
+
+| Agent | Model | Arch | Context | Output/turn | LM Studio parallel | Best For |
+| ----- | ----- | ---- | ------- | ----------- | ------------------ | -------- |
+| `o35` | ornith-1.0-35b | MoE (`qwen35moe`) | 131,072 | 10,240 | 1 | Large-scope mechanical edits, long-context token-heavy work |
+| `o9` | ornith-1.0-9b | Dense (`qwen35`) | 32,768 | 8,192 | 2 | Fast focused edits, quick lookups, parallelizable tasks |
+
+These are low-level execution models: capable tool users for well-scoped, mechanical work, but not reasoning-heavy analysis. Reserve research, cross-domain reasoning, and complex architectural judgment for the CLI agents (Claude, Codex, Antigravity) below.
+
+### Launch & device context
+
+- Served per `lmstudio/ornith.sh`: both models loaded with `--gpu max` onto the local GPU (35B = 21.17 GB, 9B = 5.63 GB resident).
+- Host: **ProArt-PX13** — AMD Ryzen AI MAX+ 395 (16 cores / 32 threads), 128 GB unified memory; Radeon 8060S runs both models fully in GPU memory via ROCm/Vulkan (up to ~62 GB shared GPU memory).
+- `o35` runs at parallel 1 (single request at a time — serialized throughput); `o9` runs at parallel 2 (two requests may interleave).
+- Budget delegations around the context/output ceilings above; for deliverables exceeding a single turn's ceiling, instruct the subagent to chunk work and return intermediate state.
 
 ## Available CLI Agents (External via Tools)
 
