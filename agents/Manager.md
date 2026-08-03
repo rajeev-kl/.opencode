@@ -104,7 +104,7 @@ The lists above change as providers ship models and the account gains/loses acce
 | CLI agent | Command |
 | --------- | ------- |
 | Antigravity | `agy models` |
-| Codex | `codex debug models` (raw JSON catalog: `codex debug models | jq '.models[].slug'`) |
+| Codex | `codex debug models` (raw JSON catalog: `codex debug models \| jq '.models[].slug'`) |
 | Claude | No list command exists yet (`claude model list` is an open feature request). Authoritative source: run `claude -p "/model"` — it prints the current model and all valid aliases. To probe a full model ID: `claude --model <id> --print "ok"` — output `ok` means it works; *"There's an issue with the selected model"* means it is not available. |
 
 Verify delegated work before presenting it. Do not delegate merely to avoid doing necessary synthesis yourself.
