@@ -123,7 +123,7 @@ A local tree-sitter graph of the project is available via the `pitlane` MCP serv
 
 ### Workflow rules
 
-1. **Call `pitlane_ensure_project_ready` first** with `project` set to the workspace root (e.g. `frequentfan-backend` for backend work). Re-indexing is incremental, so this is cheap.
+1. **Call `pitlane_ensure_project_ready` first** with `project` set to the project root (`/home/alpha/Projects/frequentfan` for this workspace). Re-indexing is incremental, so this is cheap. The index covers the whole project root with `not-used/` and `extra/` excluded.
 2. **Prefer `pitlane_investigate` / `pitlane_locate_code` / `pitlane_read_code_unit` over `grep`/`glob`/`read` for symbol and call-structure questions.** This keeps local context small (the subagents have 32K/131K windows; you are not on Ornith yourself) and avoids burning paid CLI-agent tokens on exploration.
 3. **Context-pack before delegating:** when handing a task to `cli-claude`/`cli-codex`, do a quick graph retrieval of the relevant symbols first and include the file paths / signatures in the delegation prompt. The paid agent then starts pre-scoped instead of exploring cold.
 4. **Never use `pitlane_analyze_impact` as a substitute for the project's financial-safety rules** (append-only tables, expand/contract migrations). It is a navigation aid, not a compliance check.

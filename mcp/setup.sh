@@ -23,8 +23,9 @@ BIN_DIR="$MCP_DIR/bin"
 BIN="$BIN_DIR/pitlane-mcp"
 CLI="$BIN_DIR/pitlane"
 
-# Project root = parent of `.opencode/` (this config lives in <proj>/.opencode/)
-PROJECT_ROOT="$(cd "$MCP_DIR/.." && pwd)"
+# Project root = parent of `.opencode/` (this config lives in <proj>/.opencode/,
+# and the script itself lives in <proj>/.opencode/mcp/, so go up two levels).
+PROJECT_ROOT="$(cd "$MCP_DIR/../.." && pwd)"
 PROJECT="${1:-$PROJECT_ROOT}"
 if [[ "${1:-}" == "--verify" || "${1:-}" == "--uninstall" ]]; then
   PROJECT="$PROJECT_ROOT"
@@ -83,8 +84,10 @@ build_index() {
     return 0
   fi
   echo "  Indexing $PROJECT ..."
-  (cd "$PROJECT" && "$CLI" index . >/dev/null 2>&1)
-  log "index built for $PROJECT"
+  # `not-used/` is abandoned (AGENTS.md: never read/reference) and `extra/` is
+  # read-only partner material — keep both out of the graph.
+  (cd "$PROJECT" && "$CLI" index . --exclude "not-used/**" --exclude "extra/**" >/dev/null 2>&1)
+  log "index built for $PROJECT (not-used/ and extra/ excluded)"
 }
 
 verify_integrations() {
