@@ -2,7 +2,7 @@
 
 Quickly load this configuration into any project by cloning the repo into `.opencode/` at the project root. Opencode reads `opencode.json` from that directory, so no additional setup is needed.
 
-This config sets up a primary **Manager** agent backed by the local Ornith 1.0 35B model, with three external CLI coding-agent plugins (Claude Code, Codex, Antigravity), two local subagents (o35, o9), and a self-contained pitlane-mcp code-graph server.
+This config sets up a primary **Manager** agent (runs on the model selected for the session — never the local Ornith models), with three external CLI coding-agent plugins (Claude Code, Codex, Antigravity), two local subagents (o35, o9) that run the experimental local Ornith models, and a self-contained pitlane-mcp code-graph server.
 
 ## Runtime
 
@@ -14,15 +14,17 @@ This project is written in TypeScript and uses [Bun](https://bun.sh) as its runt
 
 ## Provider / Model
 
-The default agent runs on **Ornith 1.0 35B** (proart-lms provider) via an OpenAI-compatible endpoint at `http://proart-px13.local:1234/v1/`. The model supports tool calling and reasoning, with a context window of ~262k tokens and output ceiling of 16k tokens.
+The **Manager** (default agent) runs on whichever model is selected for the session (e.g. an opencode cloud model). The local **Ornith** models are **experimental and reserved exclusively for the `o35` / `o9` subagents** — never for the Manager or as a session default.
+
+The local models are served via an OpenAI-compatible endpoint at `http://proart-px13.local:1234/v1/` (provider `proart-lms`, LM Studio). They support tool calling and reasoning, with context windows of 131,072 (35B) / 32,768 (9B) tokens.
 
 ## Agents
 
 | Agent | Mode | Role |
 | --- | --- | --- |
-| `Manager` (default) | primary | Entry point for all work. Leads research and analysis, manages multi-step tasks, decides when to delegate to CLI agents or the local subagents. |
-| `o35` | subagent | Ornith 1.0 35B — large-scope mechanical edits, long-context token-heavy work, local MCP tool use. Does not spawn further subagents. |
-| `o9` | subagent | Ornith 1.0 9B — fast focused edits, quick lookups, parallelizable tasks. Does not spawn further subagents. |
+| `Manager` (default) | primary | Entry point for all work. Runs on the session model (not Ornith). Leads research and analysis, manages multi-step tasks, decides when to delegate to CLI agents or the local subagents. |
+| `o35` | subagent | Ornith 1.0 35B (subagent-only) — large-scope mechanical edits, long-context token-heavy work, local MCP tool use. Does not spawn further subagents. |
+| `o9` | subagent | Ornith 1.0 9B (subagent-only) — fast focused edits, quick lookups, parallelizable tasks. Does not spawn further subagents. |
 
 Agent prompts are defined in `agents/Manager.md`, `agents/o35.md`, and `agents/o9.md`. The Manager agent contains the full reference of valid model IDs for each external CLI agent (Claude Code, Codex, Antigravity).
 
@@ -86,10 +88,9 @@ Everything lives inside `.opencode/mcp/` — no global `~/.claude.json` / `~/.co
 
 - The `$schema` URL for validation.
 - `default_agent`: `"Manager"`.
-- `provider.proart-lms`: the Ornith model provider (npm package `@ai-sdk/openai-compatible`, local base URL, API key, and per-model capabilities/limits).
+- `provider.proart-lms`: the Ornith model provider, used **only** by the `o35`/`o9` subagents (npm package `@ai-sdk/openai-compatible`, local base URL, API key, and per-model capabilities/limits). The Manager never runs on these models.
 - `mcp.pitlane`: the local pitlane-mcp code-graph server (workspace-relative command `.opencode/mcp/bin/pitlane-mcp`).
-- `plugin`: array of three tool plugins (`cli-claude.ts`, `cli-codex.ts`, `cli-antigravity.ts`).
-- `agent`: definitions for the three agents (`Manager` with mode `primary`, `o35` and `o9` subagents).
+- `agent`: definitions for the three agents (`Manager` with mode `primary`, `o35` and `o9` subagents). Tool plugins (`cli-claude.ts`, `cli-codex.ts`, `cli-antigravity.ts`) are auto-discovered from `tools/`.
 
 ## Saving output
 

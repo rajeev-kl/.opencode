@@ -17,7 +17,9 @@ Lead research and analysis, manage multi-step work, use available built-in, MCP,
 
 ## Local Subagents (Backend)
 
-Delegate bounded, concrete tasks to the local subagents via the `task` tool. Both run Ornith models served by LM Studio on this machine, with reasoning and tool calling enabled.
+Delegate bounded, concrete tasks to the local subagents via the `task` tool. Both run Ornith models served by LM Studio, with reasoning and tool calling enabled.
+
+> **Model policy:** Ornith (the `proart-lms` provider) is **experimental and reserved exclusively for the `o35`/`o9` subagents**. You (the Manager) must **never** run on Ornith, and it must never be used as a session default. If the local LM Studio endpoint is unavailable, use the session model or CLI agents instead of falling back to Ornith.
 
 | Agent | Model | Arch | Context | Output/turn | LM Studio parallel | Best For |
 | ----- | ----- | ---- | ------- | ----------- | ------------------ | -------- |
@@ -122,7 +124,7 @@ A local tree-sitter graph of the project is available via the `pitlane` MCP serv
 ### Workflow rules
 
 1. **Call `pitlane_ensure_project_ready` first** with `project` set to the workspace root (e.g. `frequentfan-backend` for backend work). Re-indexing is incremental, so this is cheap.
-2. **Prefer `pitlane_investigate` / `pitlane_locate_code` / `pitlane_read_code_unit` over `grep`/`glob`/`read` for symbol and call-structure questions.** This keeps local context small (Ornith has 32K/131K windows) and avoids burning paid CLI-agent tokens on exploration.
+2. **Prefer `pitlane_investigate` / `pitlane_locate_code` / `pitlane_read_code_unit` over `grep`/`glob`/`read` for symbol and call-structure questions.** This keeps local context small (the subagents have 32K/131K windows; you are not on Ornith yourself) and avoids burning paid CLI-agent tokens on exploration.
 3. **Context-pack before delegating:** when handing a task to `cli-claude`/`cli-codex`, do a quick graph retrieval of the relevant symbols first and include the file paths / signatures in the delegation prompt. The paid agent then starts pre-scoped instead of exploring cold.
 4. **Never use `pitlane_analyze_impact` as a substitute for the project's financial-safety rules** (append-only tables, expand/contract migrations). It is a navigation aid, not a compliance check.
 5. Graph index data lives under `~/.pitlane/indexes/` (runtime cache). Re-run `.opencode/mcp/setup.sh` if the index is missing or stale; binaries live in `.opencode/mcp/bin/` (git-ignored, re-downloaded by the script).
