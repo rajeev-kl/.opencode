@@ -128,4 +128,3 @@ A local tree-sitter graph of the project is available via the `pitlane` MCP serv
 3. **Context-pack before delegating:** when handing a task to `cli-claude`/`cli-codex`, do a quick graph retrieval of the relevant symbols first and include the file paths / signatures in the delegation prompt. The paid agent then starts pre-scoped instead of exploring cold.
 4. **Never use `pitlane_analyze_impact` as a substitute for the project's financial-safety rules** (append-only tables, expand/contract migrations). It is a navigation aid, not a compliance check.
 5. Graph index data lives under `~/.pitlane/indexes/` (runtime cache). Re-run `.opencode/mcp/setup.sh` if the index is missing or stale; binaries live in `.opencode/mcp/bin/` (git-ignored, re-downloaded by the script).
-

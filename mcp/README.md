@@ -33,6 +33,21 @@ Every registration points **inside `.opencode/mcp/`** — nothing is written to 
 
 Requires `curl`, `tar` (or `unzip` on Windows), and network access to GitHub Releases on first run. Pinned to `PITLANE_VERSION` in `setup.sh`.
 
+> **Stale/polluted index → force rebuild.** `setup.sh` runs `pitlane index`
+> **without `--force`**, and the CLI loads the existing index from cache when it
+> is up to date. A re-run of `setup.sh` will therefore **not** rebuild an index
+> that was created with the wrong excludes (e.g. by `pitlane_ensure_project_ready`
+> with no `exclude` args — built-in defaults do **not** cover `not-used/`). If the
+> graph contains files it shouldn't (check `workspace_roots` in
+> `pitlane_get_index_stats`), rebuild explicitly:
+>
+> ```bash
+> .opencode/mcp/bin/pitlane index . --force --exclude "not-used/**" --exclude "extra/**"
+> ```
+>
+> Always pass `exclude` args to `pitlane_ensure_project_ready` in a session so the
+> index is never rebuilt without them.
+
 ## Agent usage
 
 Agents are instructed to prefer the `pitlane_` tools over broad grep/glob for symbol, call-structure, and impact questions (see `agents/Manager.md`, `agents/o35.md`, `agents/o9.md`). Core tools:
