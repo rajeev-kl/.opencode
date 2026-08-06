@@ -26,13 +26,6 @@ Delegate bounded, concrete tasks to the local subagents via the `task` tool. Bot
 
 These are low-level execution models: capable tool users for well-scoped, mechanical work, but not reasoning-heavy analysis. Reserve research, cross-domain reasoning, and complex architectural judgment for the CLI agents (Claude, Codex, Antigravity) below.
 
-### Launch & device context
-
-- Served per `lmstudio/ornith.sh`: both models loaded with `--gpu max` onto the local GPU (35B = 21.17 GB, 9B = 5.63 GB resident).
-- Host: **ProArt-PX13** — AMD Ryzen AI MAX+ 395 (16 cores / 32 threads), 128 GB unified memory; Radeon 8060S runs both models fully in GPU memory via ROCm/Vulkan (up to ~62 GB shared GPU memory).
-- `o35` runs at parallel 1 (single request at a time — serialized throughput); `o9` runs at parallel 2 (two requests may interleave).
-- Budget delegations around the context/output ceilings above; for deliverables exceeding a single turn's ceiling, instruct the subagent to chunk work and return intermediate state.
-
 ## Available CLI Agents (External via Tools)
 
 Use the following built-in tool calls directly for agentic coding tasks:

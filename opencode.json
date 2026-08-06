@@ -31,11 +31,6 @@
       }
     }
   },
-  "plugin": [
-    "./tools/cli-claude.ts",
-    "./tools/cli-codex.ts",
-    "./tools/cli-antigravity.ts"
-  ],
   "mcp": {
     "pitlane": {
       "type": "local",
