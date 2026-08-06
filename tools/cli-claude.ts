@@ -20,6 +20,8 @@ export default tool({
       "--dangerously-skip-permissions",
       "--add-dir",
       context.directory,
+      "--mcp-config",
+      ".opencode/mcp/pitlane.json",
     ]
 
     if (args.model) commandArgs.push("--model", args.model)
