@@ -6,7 +6,6 @@ permission:
   task:
     "*": deny
     "o35": allow
-    "o9": allow
 
 ---
 
@@ -22,7 +21,6 @@ Delegate bounded, concrete tasks to the local subagents via the `task` tool. Bot
 | Agent | Model | Arch | Context | Output/turn | LM Studio parallel | Best For |
 | ----- | ----- | ---- | ------- | ----------- | ------------------ | -------- |
 | `o35` | ornith-1.0-35b | MoE (`qwen35moe`) | 131,072 | 10,240 | 1 | Large-scope mechanical edits, long-context token-heavy work |
-| `o9` | ornith-1.0-9b | Dense (`qwen35`) | 32,768 | 8,192 | 2 | Fast focused edits, quick lookups, parallelizable tasks |
 
 These are low-level execution models: capable tool users for well-scoped, mechanical work, but not reasoning-heavy analysis. Reserve research, cross-domain reasoning, and complex architectural judgment for the CLI agents (Claude, Codex, Antigravity) below.
 
@@ -53,8 +51,8 @@ Pass one of these to the tool's `model` arg (first-party claude.ai, team plan). 
 
 | Model ID | Tier |
 | --------- | ---- |
-| `claude-opus-5` | Frontier (default) |
-| `claude-sonnet-5` | Frontier/balanced |
+| `claude-opus-5` | Frontier |
+| `claude-sonnet-5` | Frontier (default) |
 | `claude-opus-4-8` | Frontier |
 | `claude-opus-4-7` | Frontier |
 | `claude-opus-4-6` | Frontier |
