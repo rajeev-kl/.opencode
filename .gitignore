@@ -3,3 +3,6 @@ package.json
 package-lock.json
 bun.lock
 outputs/
+
+# pitlane-mcp graph binaries (downloaded by mcp/setup.sh)
+mcp/bin/

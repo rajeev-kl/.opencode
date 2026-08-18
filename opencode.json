@@ -22,6 +22,13 @@
       }
     }
   },
+  "mcp": {
+    "pitlane": {
+      "type": "local",
+      "command": [".opencode/mcp/bin/pitlane-mcp"],
+      "enabled": true
+    }
+  },
   "plugin": [
     "./tools/cli-claude.ts",
     "./tools/cli-codex.ts",
