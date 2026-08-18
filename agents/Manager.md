@@ -79,10 +79,11 @@ Pass one of these to the tool's `model` arg (ChatGPT login):
 
 ### `cli-antigravity` — valid `model` values
 
-Pass one of these to the tool's `model` arg:
+Pass one of these to the tool's `model` arg (verified via `agy models`):
 
 | Model ID | Tier |
 | --------- | ---- |
+| `gemini-3.7-flash-high` / `-medium` / `-low` | Gemini Flash |
 | `gemini-3.6-flash-high` / `-medium` / `-low` | Gemini Flash |
 | `gemini-3.5-flash-high` / `-medium` / `-low` | Gemini Flash |
 | `gemini-3.1-pro-high` / `-low` | Gemini Pro |
@@ -90,7 +91,7 @@ Pass one of these to the tool's `model` arg:
 | `claude-opus-4-6-thinking` | Claude thinking via Antigravity |
 | `gpt-oss-120b-medium` | OpenAI OSS model |
 
-`effort` accepts `low|medium|high` (only relevant for the Gemini reasoning models).
+Effort is baked into the model ID suffix (`-high` / `-medium` / `-low`); the tool has no separate `effort` arg. The `agy --effort` flag exists but errors whenever `--model` is set (it conflicts with models whose ID already carries an effort suffix, and is unsupported for the Claude/OSS models), so always pick effort via the model ID. Note `gemini-3.1-pro` has only `-high` / `-low` (no medium), and the Claude/OSS models have no effort variant.
 
 ## Refreshing the model lists
 

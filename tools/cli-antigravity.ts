@@ -3,14 +3,10 @@ import { runCliAndSave } from "../lib/save-output"
 
 export default tool({
   description:
-    "Run Google's authenticated Antigravity coding agent (agy) non-interactively in the current workspace. It can inspect, edit, and execute commands. Optionally select any model exposed by the local agy installation.",
+    "Run Google's authenticated Antigravity coding agent (agy) non-interactively in the current workspace. It can inspect, edit, and execute commands. Select any model exposed by the local agy installation. Note: reasoning effort is encoded in the model ID suffix (e.g. gemini-3.7-flash-high), so pass a full model ID to pick the effort level.",
   args: {
     prompt: tool.schema.string().min(1).describe("The complete task for Antigravity"),
-    model: tool.schema.string().min(1).optional().describe("Optional Antigravity model ID"),
-    effort: tool.schema
-      .enum(["low", "medium", "high"])
-      .optional()
-      .describe("Optional reasoning effort"),
+    model: tool.schema.string().min(1).optional().describe("Optional Antigravity model ID (e.g. gemini-3.7-flash-high)"),
   },
   async execute(args, context) {
     const commandArgs = [
@@ -22,7 +18,6 @@ export default tool({
     ]
 
     if (args.model) commandArgs.push("--model", args.model)
-    if (args.effort) commandArgs.push("--effort", args.effort)
 
     return runCliAndSave({
       toolName: "cli-antigravity",

@@ -34,9 +34,9 @@ Three opencode plugins register external coding agents that can be invoked as to
 
 | Plugin | CLI binary | Description |
 | --- | --- | --- |
-| `tools/cli-claude.ts` | `claude` | Anthropic Claude Code. Accepts `prompt`, optional `model`, and `effort` (`low`/`medium`/`high`/`xhigh`/`max`). Passes `--mcp-config .opencode/mcp/pitlane.json` so every run gets the local code-graph tools. |
-| `tools/cli-codex.ts` | `codex` | OpenAI Codex CLI. Accepts `prompt` and optional `model`. Runs non-interactively with `--dangerously-bypass-approvals-and-sandbox --skip-git-repo-check --ephemeral`, injecting the pitlane graph server via a run-scoped `-c mcp_servers.pitlane.command=...` override. |
-| `tools/cli-antigravity.ts` | `agy` | Google Antigravity (`agy`). Accepts `prompt`, optional `model`, and `effort` (`low`/`medium`/`high`). |
+| `tools/cli-claude.ts` | `claude` | Anthropic Claude Code. Accepts `prompt`, optional `model`, and `effort` (`low`/`medium`/`high`/`xhigh`/`max`). |
+| `tools/cli-codex.ts` | `codex` | OpenAI Codex CLI. Accepts `prompt` and optional `model`. Runs non-interactively with `--dangerously-bypass-approvals-and-sandbox --skip-git-repo-check --ephemeral`. |
+| `tools/cli-antigravity.ts` | `agy` | Google Antigravity (`agy`). Accepts `prompt` and optional `model`. Reasoning effort is encoded in the model ID suffix (e.g. `gemini-3.7-flash-high`); there is no separate effort arg. |
 
 All three plugins run the external CLI non-interactively in the current workspace directory, pipe the task as stdin or a `--print` argument, and save their output via `lib/save-output.ts`.
 
