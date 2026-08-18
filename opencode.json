@@ -16,16 +16,7 @@
           "tool_call": true,
           "limit": {
             "context": 131072,
-            "output": 10240
-          }
-        },
-        "ornith-1.0-9b": {
-          "name": "Ornith-9b",
-          "reasoning": true,
-          "tool_call": true,
-          "limit": {
-            "context": 32768,
-            "output": 8192
+            "output": 16384
           }
         }
       }
