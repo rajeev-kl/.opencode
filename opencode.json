@@ -2,29 +2,20 @@
   "$schema": "https://opencode.ai/config.json",
   "default_agent": "Manager",
   "provider": {
-    "proart-lms": {
+    "unsloth": {
       "npm": "@ai-sdk/openai-compatible",
-      "name": "Ornith (proart-px13)",
+      "name": "proart-px13",
       "options": {
         "baseURL": "http://proart-px13.local:1234/v1/",
-        "apiKey": "EMPTY"
+        "apiKey": "sk-unsloth-51d95362490f890ac43e7cae1547cdbd"
       },
       "models": {
-        "ornith-1.0-35b": {
-          "name": "Ornith-35b",
-          "reasoning": true,
-          "tool_call": true,
-          "limit": {
-            "context": 98304,
-            "output": 16384
-          }
-        },
         "qwen3.8-27b": {
           "name": "Qwen3.8-27b",
           "reasoning": true,
           "tool_call": true,
           "limit": {
-            "context": 98304,
+            "context": 131072,
             "output": 16384
           }
         }
