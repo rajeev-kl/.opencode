@@ -34,7 +34,7 @@
   "mcp": {
     "pitlane": {
       "type": "local",
-      "command": [".opencode/mcp/bin/pitlane-mcp"],
+      "command": ["pitlane-mcp"],
       "enabled": true
     }
   }

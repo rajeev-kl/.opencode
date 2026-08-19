@@ -47,8 +47,9 @@ All three plugins run the external CLI non-interactively in the current workspac
 - **opencode** — `mcp.pitlane` in `opencode.json` (available to Manager, `ornith`, `qwen`)
 - **Claude Code** — `--mcp-config` in the `cli-claude` plugin
 - **Codex** — run-scoped `-c` override in the `cli-codex` plugin
+- **Antigravity** — interactive agy works via the discovery wrapper (entry in `~/.gemini/antigravity-cli/mcp_config.json`); the headless `cli-antigravity` tool is **not wired** because agy headless ignores `mcp_config.json` on ≥1.1.14 (see `mcp/README.md`)
 
-Everything lives inside `.opencode/mcp/` — no global `~/.claude.json` / `~/.codex/config.toml` changes. Run `.opencode/mcp/setup.sh` once per machine to fetch the binary (git-ignored) and index the project. See `mcp/README.md` for details.
+Everything lives inside `.opencode/mcp/` — no global `~/.claude.json` / `~/.codex/config.toml` changes. Run `.opencode/mcp/setup.sh` once per machine: it installs the shared binaries to `~/.local/bin/` (no per-project download) and indexes the project. See `mcp/README.md` for details.
 
 ## Library modules
 
@@ -69,7 +70,7 @@ Everything lives inside `.opencode/mcp/` — no global `~/.claude.json` / `~/.co
 │   ├── run-cli.ts    # Shell command runner via Bun.spawn
 │   └── save-output.ts  # CLI output capture and Markdown file writer
 ├── mcp/              # Self-contained pitlane-mcp code-graph setup
-│   ├── bin/          # binaries (git-ignored, fetched by setup.sh)
+│   ├── pitlane-mcp-wrapper.py  # discovery-aware stdio relay (installed as pitlane-mcp)
 │   ├── pitlane.json  # MCP server def for claude --mcp-config
 │   ├── setup.sh      # idempotent install / index / verify / uninstall
 │   └── README.md
@@ -90,7 +91,7 @@ Everything lives inside `.opencode/mcp/` — no global `~/.claude.json` / `~/.co
 - The `$schema` URL for validation.
 - `default_agent`: `"Manager"`.
 - `provider.proart-lms`: the local LM Studio model provider (Ornith 1.0 35B and Qwen 3.8 27B), used **only** by the `ornith` and `qwen` subagents (npm package `@ai-sdk/openai-compatible`, local base URL, API key, and per-model capabilities/limits). The Manager never runs on these models.
-- `mcp.pitlane`: the local pitlane-mcp code-graph server (workspace-relative command `.opencode/mcp/bin/pitlane-mcp`).
+- `mcp.pitlane`: the local pitlane-mcp code-graph server (shared `pitlane-mcp` binary in `~/.local/bin`, resolved via PATH — see `mcp/README.md`).
 - `agent`: agents are defined as markdown files in `agents/` — `Manager` with mode `primary`, and the `ornith` / `qwen` subagents. Tool plugins (`cli-claude.ts`, `cli-codex.ts`, `cli-antigravity.ts`) are auto-discovered from `tools/`.
 
 ## Saving output
