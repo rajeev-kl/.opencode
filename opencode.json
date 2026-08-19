@@ -15,25 +15,27 @@
           "reasoning": true,
           "tool_call": true,
           "limit": {
-            "context": 131072,
-            "output": 10240
+            "context": 98304,
+            "output": 16384
           }
         },
-        "ornith-1.0-9b": {
-          "name": "Ornith-9b",
+        "qwen3.8-27b": {
+          "name": "Qwen3.8-27b",
           "reasoning": true,
           "tool_call": true,
           "limit": {
-            "context": 131072,
-            "output": 10240
+            "context": 98304,
+            "output": 16384
           }
         }
       }
     }
   },
-  "plugin": [
-    "./tools/cli-claude.ts",
-    "./tools/cli-codex.ts",
-    "./tools/cli-antigravity.ts"
-  ]
+  "mcp": {
+    "pitlane": {
+      "type": "local",
+      "command": ["pitlane-mcp"],
+      "enabled": true
+    }
+  }
 }
