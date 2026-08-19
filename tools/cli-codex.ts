@@ -19,6 +19,10 @@ export default tool({
       "never",
       "--cd",
       context.directory,
+      // Inject the local pitlane graph MCP server for this run only
+      // (binary is shared at ~/.local/bin — resolved via PATH, no per-project copy).
+      "-c",
+      `mcp_servers.pitlane.command="pitlane-mcp"`,
     ]
 
     if (args.model) commandArgs.push("--model", args.model)
