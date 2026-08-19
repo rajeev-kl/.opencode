@@ -16,7 +16,7 @@ This project is written in TypeScript and uses [Bun](https://bun.sh) as its runt
 
 The **Manager** (default agent) runs on whichever model is selected for the session (e.g. an opencode cloud model). The local models are **reserved exclusively for the `ornith` and `qwen` subagents** — never for the Manager or as a session default.
 
-The local models are served via an OpenAI-compatible endpoint at `http://proart-px13.local:1234/v1/` (provider `proart-lms`, LM Studio). They support tool calling and reasoning: Ornith 1.0 35B (MoE, 102,400-token context) and Qwen 3.8 27B (dense, 102,400-token context).
+The local models are served via an OpenAI-compatible endpoint at `http://proart-px13.local:1234/v1/` (provider `proart-lms`, LM Studio). They support tool calling and reasoning: Ornith 1.0 35B (MoE, 98,304-token context) and Qwen 3.8 27B (dense, 98,304-token context).
 
 ## Agents
 
