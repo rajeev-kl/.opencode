@@ -21,8 +21,8 @@ Delegate bounded, concrete tasks to the local subagents via the `task` tool. All
 
 | Agent | Model | Context | Output/turn | LM Studio parallel | Best For |
 | ----- | ----- | ---- | ------- | ----------- | ------------------ | -------- |
-| `qwen` | qwen3.8-27b | 102,400 | 16,384 | 1 | writing, reading, testing, tool-calls |
-| `ornith` | ornith-1.0-35b | 102,400 | 16,384 | 1 | writing, reading, testing, tool-calls |
+| `qwen` | qwen3.8-27b | 98,304 | 16,384 | 1 | writing, reading, testing, tool-calls |
+| `ornith` | ornith-1.0-35b | 98,304 | 16,384 | 1 | writing, reading, testing, tool-calls |
 
 These are low-level execution models: capable tool users for well-scoped, mechanical work, but not reasoning-heavy analysis. Reserve research, cross-domain reasoning, and complex architectural judgment for the CLI agents (Antigravity, Claude, Codex) below.
 
