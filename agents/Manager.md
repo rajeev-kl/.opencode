@@ -16,17 +16,17 @@ Lead research and analysis, manage multi-step work, use available built-in, MCP,
 
 ## Local Subagents (Backend)
 
-Delegate bounded, concrete tasks to the local subagent via the `task` tool. It runs a local model served on this machine (Qwen 3.8 27B dense), with reasoning and tool calling enabled.
+Delegate bounded, concrete tasks to the local subagent via the `task` tool. It runs a local model served on this machine (Qwen 3.8 27B — text + vision multimodal), with reasoning, tool calling, and image input enabled.
 
 | Agent | Model | Context | Output/turn | Parallel | Best For |
 | ----- | ----- | ---- | ------- | ----------- | ------------------ | -------- |
-| `qwen` | qwen3.8-27b | 98,304 | 16,384 | 1 | writing, reading, testing, tool-calls |
+| `qwen` | qwen3.8-27b | 131,072 | 16,384 | 1 | writing, reading, testing, tool-calls, **image analysis** |
 
 These are low-level execution models: capable tool users for well-scoped, mechanical work, but not reasoning-heavy analysis. Reserve research, cross-domain reasoning, and complex architectural judgment for the CLI agents (Antigravity, Claude, Codex) below.
 
 ### Launch & device context
 
-- The model is loaded with `--gpu max` onto the local GPU.
+- The model is loaded with `--gpu max` onto the local GPU, with the Qwen3.8-27B vision mmproj (`mmproj-BF16.gguf`) loaded — image input works end-to-end.
 - The local server loads **one model at a time** (it unloads the previous model on load); as of the last check, `qwen3.8-27b` is loaded.
 - `qwen` runs at parallel 1 (single request at a time — serialized throughput).
 - Budget delegations around the context/output ceilings above; for deliverables exceeding a single turn's ceiling, instruct the subagent to chunk work and return intermediate state.

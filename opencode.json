@@ -7,13 +7,19 @@
       "name": "proart-px13",
       "options": {
         "baseURL": "http://proart-px13.local:1234/v1/",
-        "apiKey": "sk-unsloth-51d95362490f890ac43e7cae1547cdbd"
+        "apiKey": "{env:API_KEY}"
       },
       "models": {
         "qwen3.8-27b": {
           "name": "Qwen3.8-27b",
+          "attachment": true,
           "reasoning": true,
           "tool_call": true,
+          "temperature": true,
+          "modalities": {
+            "input": ["text", "image"],
+            "output": ["text"]
+          },
           "limit": {
             "context": 131072,
             "output": 16384
