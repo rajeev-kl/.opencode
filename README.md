@@ -2,7 +2,7 @@
 
 Quickly load this configuration into any project by cloning the repo into `.opencode/` at the project root. Opencode reads `opencode.json` from that directory, so no additional setup is needed.
 
-This config sets up a primary **Manager** agent (runs on the model selected for the session — never the local models), with three external CLI coding-agent plugins (Claude Code, Codex, Antigravity), two local subagents (`ornith`, `qwen`), and a self-contained pitlane-mcp code-graph server.
+This config sets up a primary **Manager** agent (runs on the model selected for the session — never the local model), with three external CLI coding-agent plugins (Claude Code, Codex, Antigravity), a local subagent (`qwen`), and a self-contained pitlane-mcp code-graph server.
 
 ## Runtime
 
@@ -14,19 +14,18 @@ This project is written in TypeScript and uses [Bun](https://bun.sh) as its runt
 
 ## Provider / Model
 
-The **Manager** (default agent) runs on whichever model is selected for the session (e.g. an opencode cloud model). The local models are **reserved exclusively for the `ornith` and `qwen` subagents** — never for the Manager or as a session default.
+The **Manager** (default agent) runs on whichever model is selected for the session (e.g. an opencode cloud model). The local model is **reserved exclusively for the `qwen` subagent** — never for the Manager or as a session default.
 
-The local models are served via an OpenAI-compatible endpoint at `http://proart-px13.local:1234/v1/` (provider `proart-lms`, LM Studio). They support tool calling and reasoning: Ornith 1.0 35B (MoE, 98,304-token context) and Qwen 3.8 27B (dense, 98,304-token context).
+The local model is served via an OpenAI-compatible endpoint at `http://proart-px13.local:1234/v1/` (provider `unsloth`). It supports tool calling, reasoning, and image input: Qwen 3.8 27B (multimodal text+vision, 131,072-token loaded context / 262,144 max).
 
 ## Agents
 
 | Agent | Mode | Role |
 | --- | --- | --- |
-| `Manager` (default) | primary | Entry point for all work. Runs on the session model (not Ornith). Leads research and analysis, manages multi-step tasks, decides when to delegate to CLI agents or the local subagent. |
-| `ornith` | subagent | Ornith 1.0 35B (subagent-only) — large-scope mechanical edits, long-context token-heavy work, local MCP tool use. Does not spawn further subagents. |
+| `Manager` (default) | primary | Entry point for all work. Runs on the session model (not the local model). Leads research and analysis, manages multi-step tasks, decides when to delegate to CLI agents or the local subagent. |
 | `qwen` | subagent | Qwen 3.8 27B (subagent-only) — large-scope mechanical edits, long-context token-heavy work, local MCP tool use. Does not spawn further subagents. |
 
-Agent prompts are defined in `agents/Manager.md`, `agents/ornith.md`, and `agents/qwen.md`. The Manager agent contains the full reference of valid model IDs for each external CLI agent (Claude Code, Codex, Antigravity).
+Agent prompts are defined in `agents/Manager.md` and `agents/qwen.md`. The Manager agent contains the full reference of valid model IDs for each external CLI agent (Claude Code, Codex, Antigravity).
 
 ## Plugins (CLI agents)
 
@@ -44,7 +43,7 @@ All three plugins run the external CLI non-interactively in the current workspac
 
 `mcp/` contains a self-contained [pitlane-mcp](https://github.com/eresende/pitlane-mcp) setup — a local tree-sitter graph of the project exposed as MCP tools (`pitlane_investigate`, `pitlane_locate_code`, `pitlane_read_code_unit`, `pitlane_trace_path`, `pitlane_analyze_impact`, ...). It is registered for:
 
-- **opencode** — `mcp.pitlane` in `opencode.json` (available to Manager, `ornith`, `qwen`)
+- **opencode** — `mcp.pitlane` in `opencode.json` (available to Manager and `qwen`)
 - **Claude Code** — `--mcp-config` in the `cli-claude` plugin
 - **Codex** — run-scoped `-c` override in the `cli-codex` plugin
 - **Antigravity** — interactive agy works via the discovery wrapper (entry in `~/.gemini/antigravity-cli/mcp_config.json`); the headless `cli-antigravity` tool is **not wired** because agy headless ignores `mcp_config.json` on ≥1.1.14 (see `mcp/README.md`)
@@ -64,7 +63,6 @@ Everything lives inside `.opencode/mcp/` — no global `~/.claude.json` / `~/.co
 .
 ├── agents/           # Agent system prompts (YAML frontmatter + prose)
 │   ├── Manager.md    # Primary orchestrator agent prompt
-│   ├── ornith.md        # Local subagent prompt (Ornith 35B)
 │   └── qwen.md       # Local subagent prompt (Qwen 3.8 27B)
 ├── lib/              # Shared TypeScript utilities (Bun runtime)
 │   ├── run-cli.ts    # Shell command runner via Bun.spawn
@@ -90,9 +88,9 @@ Everything lives inside `.opencode/mcp/` — no global `~/.claude.json` / `~/.co
 
 - The `$schema` URL for validation.
 - `default_agent`: `"Manager"`.
-- `provider.proart-lms`: the local LM Studio model provider (Ornith 1.0 35B and Qwen 3.8 27B), used **only** by the `ornith` and `qwen` subagents (npm package `@ai-sdk/openai-compatible`, local base URL, API key, and per-model capabilities/limits). The Manager never runs on these models.
+- `provider.unsloth`: the local model provider (Qwen 3.8 27B), used **only** by the `qwen` subagent (npm package `@ai-sdk/openai-compatible`, local base URL, API key, and per-model capabilities/limits). The Manager never runs on this model.
 - `mcp.pitlane`: the local pitlane-mcp code-graph server (shared `pitlane-mcp` binary in `~/.local/bin`, resolved via PATH — see `mcp/README.md`).
-- `agent`: agents are defined as markdown files in `agents/` — `Manager` with mode `primary`, and the `ornith` / `qwen` subagents. Tool plugins (`cli-claude.ts`, `cli-codex.ts`, `cli-antigravity.ts`) are auto-discovered from `tools/`.
+- `agent`: agents are defined as markdown files in `agents/` — `Manager` with mode `primary`, and the `qwen` subagent. Tool plugins (`cli-claude.ts`, `cli-codex.ts`, `cli-antigravity.ts`) are auto-discovered from `tools/`.
 
 ## Saving output
 
