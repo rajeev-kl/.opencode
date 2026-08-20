@@ -2,29 +2,26 @@
   "$schema": "https://opencode.ai/config.json",
   "default_agent": "Manager",
   "provider": {
-    "proart-lms": {
+    "unsloth": {
       "npm": "@ai-sdk/openai-compatible",
-      "name": "Ornith (proart-px13)",
+      "name": "proart-px13",
       "options": {
         "baseURL": "http://proart-px13.local:1234/v1/",
-        "apiKey": "EMPTY"
+        "apiKey": "{env:API_KEY}"
       },
       "models": {
-        "ornith-1.0-35b": {
-          "name": "Ornith-35b",
-          "reasoning": true,
-          "tool_call": true,
-          "limit": {
-            "context": 131072,
-            "output": 16384
-          }
-        },
         "qwen3.8-27b": {
           "name": "Qwen3.8-27b",
+          "attachment": true,
           "reasoning": true,
           "tool_call": true,
+          "temperature": true,
+          "modalities": {
+            "input": ["text", "image"],
+            "output": ["text"]
+          },
           "limit": {
-            "context": 229376,
+            "context": 131072,
             "output": 16384
           }
         }
@@ -34,13 +31,8 @@
   "mcp": {
     "pitlane": {
       "type": "local",
-      "command": [".opencode/mcp/bin/pitlane-mcp"],
+      "command": ["pitlane-mcp"],
       "enabled": true
     }
-  },
-  "plugin": [
-    "./tools/cli-claude.ts",
-    "./tools/cli-codex.ts",
-    "./tools/cli-antigravity.ts"
-  ]
+  }
 }

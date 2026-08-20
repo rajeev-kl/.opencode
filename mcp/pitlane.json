@@ -1,7 +1,7 @@
 {
   "mcpServers": {
     "pitlane": {
-      "command": ".opencode/mcp/bin/pitlane-mcp",
+      "command": "pitlane-mcp",
       "args": [],
       "env": {}
     }

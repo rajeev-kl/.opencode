@@ -20,9 +20,9 @@ export default tool({
       "--cd",
       context.directory,
       // Inject the local pitlane graph MCP server for this run only
-      // (keeps the MCP setup inside .opencode/mcp/ — no global config changes).
+      // (binary is shared at ~/.local/bin — resolved via PATH, no per-project copy).
       "-c",
-      `mcp_servers.pitlane.command="${context.directory}/.opencode/mcp/bin/pitlane-mcp"`,
+      `mcp_servers.pitlane.command="pitlane-mcp"`,
     ]
 
     if (args.model) commandArgs.push("--model", args.model)
