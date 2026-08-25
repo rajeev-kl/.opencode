@@ -39,6 +39,19 @@ Three opencode plugins register external coding agents that can be invoked as to
 
 All three plugins run the external CLI non-interactively in the current workspace directory, pipe the task as stdin or a `--print` argument, and save their output via `lib/save-output.ts`.
 
+## Unsloth Deep Research tools
+
+The Unsloth UI Backend (`unsloth-cli` on the LAN host) exposes the same agentic stack as Unsloth Desktop, including a full **Deep Research** subsystem (`/api/chat/research-runs/*`) with a plan → approve → execute workflow, a tool-confirm gate, execution sandboxes, and an SSE event stream. Two tools in `tools/` expose this to agents; they talk HTTP to the backend using the same `API_KEY` as the model provider (see `lib/unsloth.ts`):
+
+| Tool | Purpose |
+| --- | --- |
+| `tools/unsloth-deep-research.ts` | One-shot research runner. Creates a chat thread + user message + research run, waits for the plan, **auto-approves** it, and polls until the research completes. Returns the final report with citations, sources, steps, and the event log. Args: `prompt` (required), optional `instructions`, `title`, `maxSteps`, `maxSources`, `maxWaitSeconds` (default 180, max 600). |
+| `tools/unsloth-research.ts` | Low-level control tool with an `action` enum: `start` (create run, returns `run_id`), `status` (by `run_id` or active runs by `thread_id`, shows the plan + approval instructions), `events` (raw SSE event stream), `approve` (approves the plan, auto-uses the run's revision/hash), `cancel`. |
+
+Both tools first ensure `deepResearchEnabled` + `toolsEnabled` + `webFetchToolsEnabled` are on in `/api/chat/settings` so the backend is ready even after a restart.
+
+The research run lifecycle (verified live on the backend): `created → planning → awaiting_approval → (approve) → queued → running → completed`. A real run takes roughly 1.5–2.5 minutes for a simple question; up to 12 steps / 40 sources by default. The final answer lives in the run's `report` field; the thread also gets an assistant message with the full reasoning + report.
+
 ## Codebase graph (pitlane MCP)
 
 `mcp/` contains a self-contained [pitlane-mcp](https://github.com/eresende/pitlane-mcp) setup — a local tree-sitter graph of the project exposed as MCP tools (`pitlane_investigate`, `pitlane_locate_code`, `pitlane_read_code_unit`, `pitlane_trace_path`, `pitlane_analyze_impact`, ...). It is registered for:
@@ -66,16 +79,19 @@ Everything lives inside `.opencode/mcp/` — no global `~/.claude.json` / `~/.co
 │   └── qwen.md       # Local subagent prompt (Qwen 3.8 27B)
 ├── lib/              # Shared TypeScript utilities (Bun runtime)
 │   ├── run-cli.ts    # Shell command runner via Bun.spawn
-│   └── save-output.ts  # CLI output capture and Markdown file writer
+│   ├── save-output.ts  # CLI output capture and Markdown file writer
+│   └── unsloth.ts    # Unsloth UI Backend HTTP client + run/event helpers
 ├── mcp/              # Self-contained pitlane-mcp code-graph setup
 │   ├── pitlane-mcp-wrapper.py  # discovery-aware stdio relay (installed as pitlane-mcp)
 │   ├── pitlane.json  # MCP server def for claude --mcp-config
 │   ├── setup.sh      # idempotent install / index / verify / uninstall
 │   └── README.md
-├── tools/            # opencode plugin entry points for external CLIs
+├── tools/            # opencode plugin entry points for external CLIs + Unsloth tools
 │   ├── cli-claude.ts
 │   ├── cli-codex.ts
-│   └── cli-antigravity.ts
+│   ├── cli-antigravity.ts
+│   ├── unsloth-deep-research.ts
+│   └── unsloth-research.ts
 ├── outputs/          # Saved tool runs (Markdown, keyed by session)
 ├── .gitignore
 ├── opencode.json     # opencode configuration: provider, plugins, agents, MCP

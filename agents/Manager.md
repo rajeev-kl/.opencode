@@ -127,7 +127,7 @@ A local tree-sitter graph of the project is available via the `pitlane` MCP serv
 
 ### Workflow rules
 
-1. **Call `pitlane_ensure_project_ready` first** with `project` set to the project root (`/home/omega/Projects/FrequentFan` for this workspace). Re-indexing is incremental, so this is cheap. The index covers the whole project root with `extra/`, `not-used/`, and `.venv/` excluded.
+1. **Call `pitlane_ensure_project_ready` first** with `project` set to the project root (`{CWD}` for this workspace). Re-indexing is incremental, so this is cheap. The index covers the whole project root with `extra/` and `.venv/` excluded.
 2. **Prefer `pitlane_investigate` / `pitlane_locate_code` / `pitlane_read_code_unit` over `grep`/`glob`/`read` for symbol and call-structure questions.** This keeps local context small (the local subagents have 131K–229K windows; you are not on a local model yourself) and avoids burning paid CLI-agent tokens on exploration.
 3. **Context-pack before delegating:** when handing a task to `cli-claude`/`cli-codex`, do a quick graph retrieval of the relevant symbols first and include the file paths / signatures in the delegation prompt. The paid agent then starts pre-scoped instead of exploring cold.
 4. **Never use `pitlane_analyze_impact` as a substitute for the project's hard constraints** (monolith-only, no silent infra additions, no Redis, OTP-only auth — see `AGENTS.md`). It is a navigation aid, not a compliance check.
