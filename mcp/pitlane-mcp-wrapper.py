@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+
 """pitlane-mcp stdio wrapper — transparent MCP relay with Discovery interception.
 
 Why this exists:
@@ -18,13 +19,24 @@ Why this exists:
   unaffected — for them this is a pass-through relay.
 
 Installed by .opencode/mcp/setup.sh into ~/.local/bin/pitlane-mcp.
+
+Environment injection:
+  setup.sh syncs .opencode/mcp/pitlane.env -> ~/.pitlane/env. Before spawning
+  the real binary, this wrapper loads that file (if present) into the child
+  environment: KEY=VALUE lines, #' comments, surrounding quotes stripped,
+  $VARS/${VARS} expanded, ~ expanded. Additionally, when
+  PITLANE_EMBED_API_KEY_FILE is set and PITLANE_EMBED_API_KEY is not, the key
+  is read from that file — so secrets stay out of the repo while every client
+  (opencode, claude, codex, agy relay) gets identical semantic-search config.
 """
 import json
+import os
 import subprocess
 import sys
 import threading
 
 SERVER = "pitlane-mcp-bin"
+ENV_FILE = os.path.expanduser("~/.pitlane/env")
 DISCOVERY_ERROR = {
     "code": -32601,
     "message": (
@@ -34,7 +46,52 @@ DISCOVERY_ERROR = {
 }
 
 
+def _clean_value(value: str) -> str:
+    """Strip one layer of matching surrounding quotes, then expand vars/~."""
+    if len(value) >= 2 and value[0] == value[-1] and value[0] in ("'", '"'):
+        value = value[1:-1]
+    return os.path.expanduser(os.path.expandvars(value))
+
+
+def load_env_file(path: str) -> None:
+    """Load KEY=VALUE lines from `path` into os.environ (existing wins)."""
+    try:
+        with open(path, encoding="utf-8") as fh:
+            lines = fh.readlines()
+    except OSError:
+        return
+    for raw in lines:
+        line = raw.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, _, value = line.partition("=")
+        key, value = key.strip(), _clean_value(value.strip())
+        if not key or not value or key in os.environ:
+            continue
+        os.environ[key] = value
+
+
+def resolve_api_key_from_file() -> None:
+    """PITLANE_EMBED_API_KEY_FILE -> PITLANE_EMBED_API_KEY (file wins format)."""
+    key_file = os.environ.get("PITLANE_EMBED_API_KEY_FILE", "")
+    if not key_file or os.environ.get("PITLANE_EMBED_API_KEY"):
+        return
+    try:
+        with open(os.path.expanduser(key_file), encoding="utf-8") as fh:
+            key = fh.read().strip()
+    except OSError:
+        print(
+            f"pitlane-mcp wrapper: PITLANE_EMBED_API_KEY_FILE not readable: {key_file}",
+            file=sys.stderr,
+        )
+        return
+    if key:
+        os.environ["PITLANE_EMBED_API_KEY"] = key
+
+
 def main() -> int:
+    load_env_file(ENV_FILE)
+    resolve_api_key_from_file()
     server = subprocess.Popen(
         [SERVER],
         stdin=subprocess.PIPE,
@@ -42,6 +99,7 @@ def main() -> int:
         stderr=sys.stderr,  # pass server logs through to the client's stderr
         text=True,
         bufsize=1,
+        env=os.environ,
     )
 
     def relay():

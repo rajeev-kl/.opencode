@@ -7,7 +7,7 @@
       "name": "proart-px13",
       "options": {
         "baseURL": "http://proart-px13.local:1234/v1/",
-        "apiKey": "{env:API_KEY}"
+        "apiKey": "{env:UNSLOTH_API_KEY}"
       },
       "models": {
         "qwen3.8-27b": {

@@ -27,8 +27,15 @@
 # version is already present. Env overrides:
 #   PITLANE_VERSION    version tag to download (default v0.12.2)
 #   PITLANE_EXCLUDES   space-separated globs to exclude from the index
-#                      (default: extra/** .venv/** node_modules/**)
+#                      (default: not-used/** extra/** .venv/** node_modules/**)
 #   PITLANE_INDEX_FORCE=1  rebuild the index with --force
+#
+# Semantic search: `pitlane.env` in this directory holds the embedding-server
+# config (Unsloth Studio on 127.0.0.1:1235 — see ~/Projects/unsloth/embedding.sh).
+# setup.sh syncs it to ~/.pitlane/env, where the pitlane-mcp wrapper picks it
+# up for every client; build_index sources it so CLI indexing embeds too. The
+# API key itself is resolved at runtime from PITLANE_EMBED_API_KEY_FILE
+# (default ~/.unsloth/harness.key) and never stored in this repo.
 
 set -euo pipefail
 
@@ -40,6 +47,8 @@ SERVER_BIN="$LOCAL_BIN/pitlane-mcp-bin"
 WRAPPER="$LOCAL_BIN/pitlane-mcp"
 WRAPPER_SRC="$MCP_DIR/pitlane-mcp-wrapper.py"
 INDEX_CACHE="$HOME/.pitlane/indexes"
+ENV_SRC="$MCP_DIR/pitlane.env"
+ENV_INSTALLED="$HOME/.pitlane/env"
 
 # Project root = parent of `.opencode/` (this config lives in <proj>/.opencode/,
 # and the script itself lives in <proj>/.opencode/mcp/, so go up two levels).
@@ -53,8 +62,39 @@ if [[ -n "${PITLANE_EXCLUDES:-}" ]]; then
   # shellcheck disable=SC2206 # deliberate word-split of the env override
   IFS=' ' read -r -a EXCLUDES <<< "$PITLANE_EXCLUDES"
 else
-  EXCLUDES=("extra/**" ".venv/**" "node_modules/**")
+  EXCLUDES=("not-used/**" "extra/**" ".venv/**" "node_modules/**")
 fi
+
+# Source the installed pitlane.env (fallback: repo copy) and resolve the API
+# key from PITLANE_EMBED_API_KEY_FILE. Used at index time and by --verify.
+load_pitlane_env() {
+  local env_file="$ENV_INSTALLED"
+  [[ -f "$env_file" ]] || env_file="$ENV_SRC"
+  [[ -f "$env_file" ]] || return 0
+  # shellcheck disable=SC1090
+  set -a; source "$env_file"; set +a
+  if [[ -n "${PITLANE_EMBED_API_KEY_FILE:-}" && -z "${PITLANE_EMBED_API_KEY:-}" ]]; then
+    local kf
+    kf="$(eval "printf '%s' \"$PITLANE_EMBED_API_KEY_FILE\"")"
+    if [[ -f "$kf" ]]; then
+      export PITLANE_EMBED_API_KEY="$(tr -d '[:space:]' < "$kf")"
+    fi
+  fi
+}
+
+# Sync the repo config to the machine-local location the wrapper reads.
+sync_env_file() {
+  if [[ ! -f "$ENV_SRC" ]]; then
+    return 0
+  fi
+  if [[ -f "$ENV_INSTALLED" ]] && cmp -s "$ENV_SRC" "$ENV_INSTALLED"; then
+    log "pitlane.env already synced ($ENV_INSTALLED)"
+    return 0
+  fi
+  mkdir -p "$(dirname "$ENV_INSTALLED")"
+  install -m 0644 "$ENV_SRC" "$ENV_INSTALLED"
+  log "synced pitlane.env -> $ENV_INSTALLED (semantic search config)"
+}
 
 log()  { printf "  \033[1;32m✓\033[0m %s\n" "$*"; }
 warn() { printf "  \033[1;33m!\033[0m %s\n" "$*"; }
@@ -167,18 +207,51 @@ build_index() {
     warn "pitlane CLI not found; skipping index build (run without --verify first)"
     return 0
   fi
+  load_pitlane_env
   local index_args=()
   local e
   for e in "${EXCLUDES[@]}"; do index_args+=(--exclude "$e"); done
   [[ "${PITLANE_INDEX_FORCE:-}" == "1" ]] && index_args+=(--force)
   echo "  Indexing $PROJECT ..."
   (cd "$PROJECT" && "$CLI" index . "${index_args[@]}" >/dev/null 2>&1)
+  if [[ -n "${PITLANE_EMBED_URL:-}" ]]; then
+    echo "  Waiting for embedding generation (${PITLANE_EMBED_MODEL:-?} @ $PITLANE_EMBED_URL) ..."
+    ("$CLI" wait-embeddings "$PROJECT" --timeout-secs 900 >/dev/null 2>&1) \
+      && log "embeddings generated" \
+      || warn "embedding generation incomplete — is the embedding server up? ($PITLANE_EMBED_URL)"
+  fi
   log "index built for $PROJECT (excludes: ${EXCLUDES[*]})"
+}
+
+# Health check for the Unsloth Studio embedding server (:1235). Warn-only:
+# indexing/search degrade to BM25 when it is down, so this must not hard-fail.
+verify_embedding_server() {
+  local key_file="${PITLANE_EMBED_API_KEY_FILE:-$HOME/.unsloth/harness.key}"
+  local url="${PITLANE_EMBED_URL:-http://127.0.0.1:1235/v1/embeddings}"
+  local base="${url%/v1/embeddings}"
+  local kf
+  kf="$(eval "printf '%s' \"$key_file\"")"
+  if [[ ! -f "$kf" ]]; then
+    warn "embedding server: API key file missing ($kf) — cannot authenticate"
+    return 1
+  fi
+  local code
+  code="$(curl -s -o /dev/null -w '%{http_code}' -m 5 \
+    -H "Authorization: Bearer $(tr -d '[:space:]' < "$kf")" "$base/v1/models" || true)"
+  if [[ "$code" == "200" ]]; then
+    log "embedding server: $base healthy (${PITLANE_EMBED_MODEL:-model unset})"
+    return 0
+  fi
+  warn "embedding server not reachable at $base (HTTP $code)"
+  warn "  start it with ~/Projects/unsloth/embedding.sh — semantic search falls back to BM25 until then"
+  return 1
 }
 
 verify_integrations() {
   echo "  Verifying binaries..."
   local ok=0
+  local total=8
+  load_pitlane_env
 
   if [[ -x "$CLI" ]]; then
     log "CLI: $CLI ($("$CLI" --version 2>/dev/null | head -1))"
@@ -216,6 +289,12 @@ verify_integrations() {
   fi
 
   ensure_local_bin_on_path
+
+  echo ""
+  echo "  Verifying embedding server..."
+  if verify_embedding_server; then
+    ok=$((ok+1))
+  fi
 
   echo ""
   echo "  Verifying integrations..."
@@ -263,13 +342,13 @@ verify_integrations() {
   fi
 
   echo ""
-  echo "  $ok/7 checks green."
+  echo "  $ok/$total checks green."
 }
 
 uninstall() {
-  rm -f "$WRAPPER" "$SERVER_BIN" "$CLI"
+  rm -f "$WRAPPER" "$SERVER_BIN" "$CLI" "$ENV_INSTALLED"
   rm -rf "$INDEX_CACHE" 2>/dev/null || true
-  echo "  Removed $LOCAL_BIN/{pitlane,pitlane-mcp,pitlane-mcp-bin} and $INDEX_CACHE."
+  echo "  Removed $LOCAL_BIN/{pitlane,pitlane-mcp,pitlane-mcp-bin}, $ENV_INSTALLED and $INDEX_CACHE."
 }
 
 # ── main ────────────────────────────────────────────────────────────────────
@@ -277,10 +356,11 @@ case "${1:-}" in
   --verify)   verify_integrations ;;
   --uninstall) uninstall ;;
   *)
-    ensure_local_bin_on_path
-    install_binaries
-    install_wrapper
-    build_index
+  ensure_local_bin_on_path
+  install_binaries
+  install_wrapper
+  sync_env_file
+  build_index
     echo ""
     echo "  Done. pitlane-mcp is available to:"
     echo "    - opencode  (Manager + subagents, via .opencode/opencode.json)"
