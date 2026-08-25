@@ -53,7 +53,7 @@ if [[ -n "${PITLANE_EXCLUDES:-}" ]]; then
   # shellcheck disable=SC2206 # deliberate word-split of the env override
   IFS=' ' read -r -a EXCLUDES <<< "$PITLANE_EXCLUDES"
 else
-  EXCLUDES=("extra/**" ".venv/**" "node_modules/**")
+  EXCLUDES=("extra/**" "not-used/**" ".venv/**" "node_modules/**")
 fi
 
 log()  { printf "  \033[1;32m✓\033[0m %s\n" "$*"; }
