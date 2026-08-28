@@ -86,10 +86,10 @@ Pass one of these to the tool's `model` arg (verified via `agy models`):
 
 | Model ID | Tier |
 | --------- | ---- |
-| `gemini-3.7-flash-high` / `-medium` / `-low` | Gemini Flash |
-| `gemini-3.6-flash-high` / `-medium` / `-low` | Gemini Flash |
-| `gemini-3.5-flash-high` / `-medium` / `-low` | Gemini Flash |
-| `gemini-3.1-pro-high` / `-low` | Gemini Pro |
+| `gemini-3.7-flash-low` / `-medium` / `-high` | Gemini Flash |
+| `gemini-3.6-flash-low` / `-medium` / `-high` | Gemini Flash |
+| `gemini-3.5-flash-low` / `-medium` / `-high` | Gemini Flash |
+| `gemini-3.1-pro-low` / `-high` | Gemini Pro |
 | `claude-sonnet-4-6` | Claude via Antigravity |
 | `claude-opus-4-6-thinking` | Claude thinking via Antigravity |
 | `gpt-oss-120b-medium` | OpenAI OSS model |
