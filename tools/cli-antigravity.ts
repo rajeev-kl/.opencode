@@ -9,10 +9,6 @@ export default tool({
     model: tool.schema.string().min(1).optional().describe("Optional Antigravity model ID (e.g. gemini-3.7-flash-high)"),
   },
   async execute(args, context) {
-    // NOTE: pitlane MCP is NOT available to this tool — agy >=1.1.14 headless
-    // mode does not load mcp_config.json (global or workspace) and agy has no
-    // per-run MCP flag. Interactive agy DOES work via the discovery wrapper
-    // installed by mcp/setup.sh. See .opencode/mcp/README.md.
     const commandArgs = [
       "--print",
       args.prompt,

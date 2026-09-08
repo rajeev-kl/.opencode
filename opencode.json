@@ -26,6 +26,31 @@
           }
         }
       }
+    },
+    "unsloth-peladn": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "peladn",
+      "options": {
+        "baseURL": "http://Peladn-YO2.local:1234/v1/",
+        "apiKey": "{env:UNSLOTH_API_KEY_PELADN}"
+      },
+      "models": {
+        "Qwen3.8-Flash-Next-UD-Q4_K_XL-00001-of-00004": {
+          "name": "Qwen3.8 Flash Next UD Q4_K_XL",
+          "attachment": true,
+          "reasoning": true,
+          "tool_call": true,
+          "temperature": true,
+          "modalities": {
+            "input": ["text", "image"],
+            "output": ["text"]
+          },
+          "limit": {
+            "context": 262144,
+            "output": 16384
+          }
+        }
+      }
     }
   },
   "mcp": {

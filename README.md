@@ -2,7 +2,7 @@
 
 Quickly load this configuration into any project by cloning the repo into `.opencode/` at the project root. Opencode reads `opencode.json` from that directory, so no additional setup is needed.
 
-This config sets up a primary **Manager** agent (runs on the model selected for the session — never the local model), with three external CLI coding-agent plugins (Claude Code, Codex, Antigravity), a local subagent (`qwen`), and a self-contained pitlane-mcp code-graph server.
+This config sets up a primary **Manager** agent (runs on the model selected for the session — never the local model), with three external CLI coding-agent plugins (Claude Code, Codex, Antigravity), two local subagents (`qwen`, `qwen-flash`), and a self-contained pitlane-mcp code-graph server.
 
 ## Runtime
 
@@ -14,9 +14,12 @@ This project is written in TypeScript and uses [Bun](https://bun.sh) as its runt
 
 ## Provider / Model
 
-The **Manager** (default agent) runs on whichever model is selected for the session (e.g. an opencode cloud model). The local model is **reserved exclusively for the `qwen` subagent** — never for the Manager or as a session default.
+The **Manager** (default agent) runs on whichever model is selected for the session (e.g. an opencode cloud model). The local models are **reserved exclusively for the `qwen` / `qwen-flash` subagents**.
 
-The local model is served via an OpenAI-compatible endpoint at `http://proart-px13.local:1234/v1/` (provider `unsloth`). It supports tool calling, reasoning, and image input: Qwen 3.8 27B (multimodal text+vision, 131,072-token loaded context / 262,144 max).
+Two OpenAI-compatible endpoints exist, one per host — each server loads only one model at a time, but the hosts are independent and can serve concurrently:
+
+- provider `unsloth` — `http://proart-px13.local:1234/v1/`: Qwen 3.8 27B (tool calling, reasoning, image input; 131,072-token loaded context / 262,144 max). Used by `qwen`.
+- provider `unsloth-peladn` — `http://Peladn-YO2.local:1234/v1/`: Qwen3.8 Flash Next UD Q4_K_XL (reasoning model; 262,144 context; **no vision projector loaded** — text-only in practice). Used by `qwen-flash`.
 
 ## Agents
 
@@ -24,8 +27,9 @@ The local model is served via an OpenAI-compatible endpoint at `http://proart-px
 | --- | --- | --- |
 | `Manager` (default) | primary | Entry point for all work. Runs on the session model (not the local model). Leads research and analysis, manages multi-step tasks, decides when to delegate to CLI agents or the local subagent. |
 | `qwen` | subagent | Qwen 3.8 27B (subagent-only) — large-scope mechanical edits, long-context token-heavy work, local MCP tool use. Does not spawn further subagents. |
+| `qwen-flash` | subagent | Qwen3.8 Flash Next UD Q4_K_XL (subagent-only) — same role as `qwen`, on the second host (`unsloth-peladn`); 262,144-token context, text-only. Does not spawn further subagents. |
 
-Agent prompts are defined in `agents/Manager.md` and `agents/qwen.md`. The Manager agent contains the full reference of valid model IDs for each external CLI agent (Claude Code, Codex, Antigravity).
+Agent prompts are defined in `agents/Manager.md`, `agents/qwen.md`, and `agents/qwen-flash.md`. The Manager agent contains the full reference of valid model IDs for each external CLI agent (Claude Code, Codex, Antigravity).
 
 ## Plugins (CLI agents)
 
@@ -39,19 +43,6 @@ Three opencode plugins register external coding agents that can be invoked as to
 
 All three plugins run the external CLI non-interactively in the current workspace directory, pipe the task as stdin or a `--print` argument, and save their output via `lib/save-output.ts`.
 
-## Unsloth Deep Research tools
-
-The Unsloth UI Backend (`unsloth-cli` on the LAN host) exposes the same agentic stack as Unsloth Desktop, including a full **Deep Research** subsystem (`/api/chat/research-runs/*`) with a plan → approve → execute workflow, a tool-confirm gate, execution sandboxes, and an SSE event stream. Two tools in `tools/` expose this to agents; they talk HTTP to the backend using the same `API_KEY` as the model provider (see `lib/unsloth.ts`):
-
-| Tool | Purpose |
-| --- | --- |
-| `tools/unsloth-deep-research.ts` | One-shot research runner. Creates a chat thread + user message + research run, waits for the plan, **auto-approves** it, and polls until the research completes. Returns the final report with citations, sources, steps, and the event log. Args: `prompt` (required), optional `instructions`, `title`, `maxSteps`, `maxSources`, `maxWaitSeconds` (default 180, max 600). |
-| `tools/unsloth-research.ts` | Low-level control tool with an `action` enum: `start` (create run, returns `run_id`), `status` (by `run_id` or active runs by `thread_id`, shows the plan + approval instructions), `events` (raw SSE event stream), `approve` (approves the plan, auto-uses the run's revision/hash), `cancel`. |
-
-Both tools first ensure `deepResearchEnabled` + `toolsEnabled` + `webFetchToolsEnabled` are on in `/api/chat/settings` so the backend is ready even after a restart.
-
-The research run lifecycle (verified live on the backend): `created → planning → awaiting_approval → (approve) → queued → running → completed`. A real run takes roughly 1.5–2.5 minutes for a simple question; up to 12 steps / 40 sources by default. The final answer lives in the run's `report` field; the thread also gets an assistant message with the full reasoning + report.
-
 ## Codebase graph (pitlane MCP)
 
 `mcp/` contains a self-contained [pitlane-mcp](https://github.com/eresende/pitlane-mcp) setup — a local tree-sitter graph of the project exposed as MCP tools (`pitlane_investigate`, `pitlane_locate_code`, `pitlane_read_code_unit`, `pitlane_trace_path`, `pitlane_analyze_impact`, ...). It is registered for:
@@ -59,7 +50,7 @@ The research run lifecycle (verified live on the backend): `created → planning
 - **opencode** — `mcp.pitlane` in `opencode.json` (available to Manager and `qwen`)
 - **Claude Code** — `--mcp-config` in the `cli-claude` plugin
 - **Codex** — run-scoped `-c` override in the `cli-codex` plugin
-- **Antigravity** — interactive agy works via the discovery wrapper (entry in `~/.gemini/antigravity-cli/mcp_config.json`); the headless `cli-antigravity` tool is **not wired** because agy headless ignores `mcp_config.json` on ≥1.1.14 (see `mcp/README.md`)
+- **Antigravity** — registered via the `agy` discovery wrapper installed by `mcp/setup.sh` (see `cli-antigravity.ts`).
 
 Everything lives inside `.opencode/mcp/` — no global `~/.claude.json` / `~/.codex/config.toml` changes. Run `.opencode/mcp/setup.sh` once per machine: it installs the shared binaries to `~/.local/bin/` (no per-project download) and indexes the project. See `mcp/README.md` for details.
 
@@ -86,12 +77,10 @@ Everything lives inside `.opencode/mcp/` — no global `~/.claude.json` / `~/.co
 │   ├── pitlane.json  # MCP server def for claude --mcp-config
 │   ├── setup.sh      # idempotent install / index / verify / uninstall
 │   └── README.md
-├── tools/            # opencode plugin entry points for external CLIs + Unsloth tools
+├── tools/            # opencode plugin entry points for external CLIs
 │   ├── cli-claude.ts
 │   ├── cli-codex.ts
-│   ├── cli-antigravity.ts
-│   ├── unsloth-deep-research.ts
-│   └── unsloth-research.ts
+│   └── cli-antigravity.ts
 ├── outputs/          # Saved tool runs (Markdown, keyed by session)
 ├── .gitignore
 ├── opencode.json     # opencode configuration: provider, plugins, agents
