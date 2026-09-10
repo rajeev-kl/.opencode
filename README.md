@@ -2,7 +2,7 @@
 
 Quickly load this configuration into any project by cloning the repo into `.opencode/` at the project root. Opencode reads `opencode.json` from that directory, so no additional setup is needed.
 
-This config sets up a primary **Manager** agent (runs on the model selected for the session — never the local model), with three external CLI coding-agent plugins (Claude Code, Codex, Antigravity), two local subagents (`qwen`, `qwen-flash`), and a self-contained pitlane-mcp code-graph server.
+This config sets up a primary **Manager** agent (runs on the model selected for the session — never the local model), with three external CLI coding-agent plugins (Claude Code, Codex, Antigravity), three local subagents (`qwen`, `qwen-flash`, `ornith`), and a self-contained pitlane-mcp code-graph server.
 
 ## Runtime
 
@@ -14,12 +14,13 @@ This project is written in TypeScript and uses [Bun](https://bun.sh) as its runt
 
 ## Provider / Model
 
-The **Manager** (default agent) runs on whichever model is selected for the session (e.g. an opencode cloud model). The local models are **reserved exclusively for the `qwen` / `qwen-flash` subagents**.
+The **Manager** (default agent) runs on whichever model is selected for the session (e.g. an opencode cloud model). The local models are **reserved exclusively for the `qwen` / `qwen-flash` / `ornith` subagents**.
 
-Two OpenAI-compatible endpoints exist, one per host — each server loads only one model at a time, but the hosts are independent and can serve concurrently:
+Three OpenAI-compatible endpoints exist across two hosts — each server loads only one model at a time, and the hosts are independent and can serve concurrently:
 
-- provider `unsloth` — `http://proart-px13.local:1234/v1/`: Qwen 3.8 27B (tool calling, reasoning, image input; 131,072-token loaded context / 262,144 max). Used by `qwen`.
+- provider `unsloth` — `http://proart-px13.local:1234/v1/`: Qwen 3.8 27B (tool calling, reasoning, image input; 262,144-token loaded context / 262,144 max). Used by `qwen`.
 - provider `unsloth-peladn` — `http://Peladn-YO2.local:1234/v1/`: Qwen3.8 Flash Next UD Q4_K_XL (reasoning model; 262,144 context; **no vision projector loaded** — text-only in practice). Used by `qwen-flash`.
+- provider `ornith` — `http://proart-px13.local:1234/v1/` (same endpoint and API key as `unsloth`): Ornith 1.5 35B A3B Q6_K, registered as `ornith-ai/Ornith-1.5-35B-A3B-GGUF`. Used by `ornith`. Shares the proart-px13 server with `unsloth` — **one of the two is loaded at a time** (loading `ornith` unloads `qwen`, and vice versa). Capabilities (vision projector, reasoning, exact context) are declared in config but unverified until the model is loaded.
 
 ## Agents
 
@@ -28,8 +29,9 @@ Two OpenAI-compatible endpoints exist, one per host — each server loads only o
 | `Manager` (default) | primary | Entry point for all work. Runs on the session model (not the local model). Leads research and analysis, manages multi-step tasks, decides when to delegate to CLI agents or the local subagent. |
 | `qwen` | subagent | Qwen 3.8 27B (subagent-only) — large-scope mechanical edits, long-context token-heavy work, local MCP tool use. Does not spawn further subagents. |
 | `qwen-flash` | subagent | Qwen3.8 Flash Next UD Q4_K_XL (subagent-only) — same role as `qwen`, on the second host (`unsloth-peladn`); 262,144-token context, text-only. Does not spawn further subagents. |
+| `ornith` | subagent | Ornith 1.5 35B A3B (subagent-only) — same role as `qwen`, on the same proart-px13 host (`ornith` provider); shares the server with `qwen` (one model loaded at a time). Capabilities unverified until loaded. Does not spawn further subagents. |
 
-Agent prompts are defined in `agents/Manager.md`, `agents/qwen.md`, and `agents/qwen-flash.md`. The Manager agent contains the full reference of valid model IDs for each external CLI agent (Claude Code, Codex, Antigravity).
+Agent prompts are defined in `agents/Manager.md`, `agents/qwen.md`, `agents/qwen-flash.md`, and `agents/ornith.md`. The Manager agent contains the full reference of valid model IDs for each external CLI agent (Claude Code, Codex, Antigravity).
 
 ## Plugins (CLI agents)
 
@@ -67,7 +69,9 @@ Everything lives inside `.opencode/mcp/` — no global `~/.claude.json` / `~/.co
 .
 ├── agents/           # Agent system prompts (YAML frontmatter + prose)
 │   ├── Manager.md    # Primary orchestrator agent prompt
-│   └── qwen.md       # Local subagent prompt (Qwen 3.8 27B)
+│   ├── qwen.md       # Local subagent prompt (Qwen 3.8 27B)
+│   ├── qwen-flash.md # Local subagent prompt (Qwen3.8 Flash Next, Peladn-YO2)
+│   └── ornith.md     # Local subagent prompt (Ornith 1.5 35B A3B)
 ├── lib/              # Shared TypeScript utilities (Bun runtime)
 │   ├── run-cli.ts    # Shell command runner via Bun.spawn
 │   ├── save-output.ts  # CLI output capture and Markdown file writer
@@ -94,8 +98,9 @@ Everything lives inside `.opencode/mcp/` — no global `~/.claude.json` / `~/.co
 - The `$schema` URL for validation.
 - `default_agent`: `"Manager"`.
 - `provider.unsloth`: the local model provider (Qwen 3.8 27B), used **only** by the `qwen` subagent (npm package `@ai-sdk/openai-compatible`, local base URL, API key, and per-model capabilities/limits). The Manager never runs on this model.
+- `provider.ornith`: Ornith 1.5 35B A3B on the same `http://proart-px13.local:1234/v1/` endpoint and `{env:UNSLOTH_API_KEY}` as `unsloth`; used **only** by the `ornith` subagent.
 - `mcp.pitlane`: the local pitlane-mcp code-graph server (shared `pitlane-mcp` binary in `~/.local/bin`, resolved via PATH — see `mcp/README.md`).
-- `agent`: agents are defined as markdown files in `agents/` — `Manager` with mode `primary`, and the `qwen` subagent. Tool plugins (`cli-claude.ts`, `cli-codex.ts`, `cli-antigravity.ts`) are auto-discovered from `tools/`.
+- `agent`: agents are defined as markdown files in `agents/` — `Manager` with mode `primary`, and the `qwen`, `qwen-flash`, and `ornith` subagents. Tool plugins (`cli-claude.ts`, `cli-codex.ts`, `cli-antigravity.ts`) are auto-discovered from `tools/`.
 
 ## Saving output
 

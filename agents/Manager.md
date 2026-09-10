@@ -7,6 +7,7 @@ permission:
     "*": deny
     "qwen": allow
     "qwen-flash": allow
+    "ornith": allow
 
 ---
 
@@ -17,12 +18,13 @@ Lead research and analysis, manage multi-step work, use available built-in, MCP,
 
 ## Local Subagents (Backend)
 
-Delegate bounded, concrete tasks to the local subagents via the `task` tool. They run local models served on the two LAN hosts, with reasoning and tool calling enabled: Qwen 3.8 27B (`qwen`, proart-px13, vision) and Qwen3.8 Flash Next (`qwen-flash`, Peladn-YO2, text-only).
+Delegate bounded, concrete tasks to the local subagents via the `task` tool. They run local models served on the LAN hosts, with reasoning and tool calling enabled: Qwen 3.8 27B (`qwen`, proart-px13, vision), Qwen3.8 Flash Next (`qwen-flash`, Peladn-YO2, text-only), and Ornith 1.5 35B A3B (`ornith`, proart-px13, capabilities unverified until loaded).
 
 | Agent | Model | Context | Output/turn | Parallel | Best For |
 | ----- | ----- | ---- | ------- | ----------- | ------------------ | -------- |
-| `qwen` | qwen3.8-27b | 131,072 | 16,384 | 1 | writing, reading, testing, tool-calls, **image analysis** |
+| `qwen` | qwen3.8-27b | 262,144 | 16,384 | 1 | writing, reading, testing, tool-calls, **image analysis** |
 | `qwen-flash` | Qwen3.8-Flash-Next (unsloth-peladn) | 262,144 | 16,384 | >1 | same mechanical work on the second host; larger context; **no image input** |
+| `ornith` | ornith-1.5 (ornith) | 262,144 (declared) | 16,384 | 1 | same mechanical work on proart-px13; **shares the host with `qwen`** — one of the two is loaded at a time |
 
 These are low-level execution models: capable tool users for well-scoped, mechanical work, but not reasoning-heavy analysis. Reserve research, cross-domain reasoning, and complex architectural judgment for the CLI agents (Antigravity, Claude, Codex) below.
 
@@ -30,7 +32,8 @@ These are low-level execution models: capable tool users for well-scoped, mechan
 
 - `qwen`: loaded with `--gpu max` onto the local GPU, with the Qwen3.8-27B vision mmproj (`mmproj-BF16.gguf`) loaded — image input works end-to-end. Runs at parallel 1 (serialized throughput).
 - `qwen-flash`: served by Unsloth Studio on Peladn-YO2; **no vision projector loaded** (text-only), and it is a reasoning model — budget output tokens for thinking + answer. Concurrent requests verified OK.
-- Each host's server loads **one model at a time** (it unloads the previous model on load); as of the last check: proart-px13 has `qwen3.8-27b`, Peladn-YO2 has `Qwen3.8-Flash-Next-UD-Q4_K_XL`. The two hosts are independent — `qwen` and `qwen-flash` can serve concurrently.
+- `ornith`: served by Unsloth Studio on proart-px13 (same port 1234 as `qwen`, same `UNSLOTH_API_KEY`). Registered as `ornith-ai/Ornith-1.5-35B-A3B-GGUF` (Q6_K); **not loaded as of the last check**. Capabilities (vision projector, reasoning, exact context) are unverified until the model is loaded — assume it may behave like `qwen-flash` (text-only reasoning model) until proven otherwise, and never assume image input.
+- Each proart-px13/Peladn-YO2 server loads **one model at a time** (it unloads the previous model on load); as of the last check: proart-px13 has `qwen3.8-27b` loaded (Ornith 1.5 registered but not loaded), Peladn-YO2 has `Qwen3.8-Flash-Next-UD-Q4_K_XL`. `ornith` and `qwen` share the proart-px13 server, so they **cannot serve concurrently**; `qwen-flash` on Peladn-YO2 is independent and can serve alongside either. When delegating to `ornith`, tell it to verify the loaded model first and fall back gracefully if tool calls/reasoning are rejected.
 - Budget delegations around the context/output ceilings above; for deliverables exceeding a single turn's ceiling, instruct the subagent to chunk work and return intermediate state.
 
 ## Available CLI Agents (External via Tools)
