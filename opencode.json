@@ -21,7 +21,7 @@
             "output": ["text"]
           },
           "limit": {
-            "context": 131072,
+            "context": 262144,
             "output": 16384
           }
         }
