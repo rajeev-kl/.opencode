@@ -58,13 +58,9 @@ Pass one of these to the tool's `model` arg (first-party claude.ai, team plan). 
 | --------- | ---- |
 | `claude-opus-5` | Frontier |
 | `claude-sonnet-5` | Frontier (default) |
-| `claude-opus-4-8` | Frontier |
-| `claude-opus-4-7` | Frontier |
-| `claude-opus-4-6` | Frontier |
-| `claude-sonnet-4-6` | Balanced |
-| `claude-sonnet-4-5` | Balanced |
 | `claude-fable-5` | Long-context assistant |
-| `claude-haiku-4-5` | Fast/cheap |
+| `claude-opus-4-8` | Frontier |
+| `claude-sonnet-4-6` | Balanced |
 
 Aliases (from `/model` picker): `sonnet`, `opus`, `haiku`, `fable`, `best`, `sonnet[1m]`, `opus[1m]`, `fable[1m]` (1M context variants), `opusplan`, `default`, or any full model ID. Current default is `opus[1m]` (Opus 5, 1M context) at `effort: xhigh`. `effort` accepts `low|medium|high|xhigh|max`.
 
@@ -76,12 +72,11 @@ Pass one of these to the tool's `model` arg (ChatGPT login):
 
 | Model ID | Tier |
 | --------- | ---- |
+| `gpt-6-astra` | Most capable (coding, computer use, science) |
 | `gpt-5.6-sol` | Frontier agentic coding |
 | `gpt-5.6-terra` | Balanced everyday work |
 | `gpt-5.6-luna` | Fast/cheap |
 | `gpt-5.5` | Frontier (complex coding/research) |
-| `gpt-5.4` | Strong everyday coding |
-| `gpt-5.4-mini` | Small, fast, cost-efficient |
 
 **Not a coding model:** `codex-auto-review` (internal review model) — do not pass it as `model`.
 
@@ -91,9 +86,9 @@ Pass one of these to the tool's `model` arg (verified via `agy models`):
 
 | Model ID | Tier |
 | --------- | ---- |
+| `gemini-3.8-flash-low` / `-medium` / `-high` | Gemini Flash |
 | `gemini-3.7-flash-low` / `-medium` / `-high` | Gemini Flash |
 | `gemini-3.6-flash-low` / `-medium` / `-high` | Gemini Flash |
-| `gemini-3.5-flash-low` / `-medium` / `-high` | Gemini Flash |
 | `gemini-3.1-pro-low` / `-high` | Gemini Pro |
 | `claude-sonnet-4-6` | Claude via Antigravity |
 | `claude-opus-4-6-thinking` | Claude thinking via Antigravity |
