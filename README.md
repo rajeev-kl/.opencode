@@ -6,9 +6,10 @@ This config sets up a primary **Manager** agent (runs on the model selected for 
 
 ## Runtime
 
-This project is written in TypeScript and uses [Bun](https://bun.sh) as its runtime. The runtime dependencies are:
+This project is written in TypeScript and runs on [Bun](https://bun.sh), which is the runtime OpenCode itself embeds. There is nothing to install and no `package.json` step: the plugins declare only local structural types, so cloning this directory into a project is sufficient.
 
-- `@opencode-ai/plugin` -- opencode's plugin SDK (provides the `tool()` helper used to register CLI agents).
+Runtime dependencies:
+
 - `bun:sqlite` -- Bun's built-in SQLite binding, used by `lib/save-output.ts` to look up session titles.
 - Node.js stdlib (`node:path`, `node:fs`) for file I/O and path handling.
 
@@ -26,14 +27,14 @@ Agent prompts are defined in `agents/Manager.md`. The Manager agent contains the
 
 ## Plugins (CLI agents)
 
-Three opencode plugins register external coding agents that can be invoked as tools:
+OpenCode V2 registers custom tools through **plugins**, not standalone tool files. V2 discovers local plugins only from `.opencode/plugin/` and `.opencode/plugins/`; the V1 `.opencode/tool/` directory is no longer scanned. Each plugin default-exports a `{ id, setup(ctx) }` definition and registers its tool with `ctx.tool.transform(...)`, declaring the input as JSON Schema and returning `{ content }`.
 
 | Plugin | CLI binary | Description |
 | --- | --- | --- |
-| `tools/cli-codex.ts` | `codex` | OpenAI Codex CLI. Accepts `prompt` and optional `model`. Runs non-interactively with `--dangerously-bypass-approvals-and-sandbox --skip-git-repo-check --ephemeral`. |
-| `tools/cli-antigravity.ts` | `agy` | Google Antigravity (`agy`). Accepts `prompt` and optional `model`. Reasoning effort is encoded in the model ID suffix (e.g. `gemini-3.7-flash-high`); there is no separate effort arg. |
+| `plugins/cli-antigravity.ts` | `agy` | Google Antigravity (`agy`). Accepts `prompt` and optional `model`. Runs non-interactively with `--print --dangerously-skip-permissions --add-dir <workspace>`. Reasoning effort is encoded in the model ID suffix (e.g. `gemini-3.7-flash-high`); there is no separate effort arg. |
+| `tools/cli-codex.ts` | `codex` | **Not loaded by OpenCode V2.** Still a V1 tool file that must be ported to the plugin API before `cli-codex` will register. |
 
-All three plugins run the external CLI non-interactively in the current workspace directory, pipe the task as stdin or a `--print` argument, and save their output via `lib/save-output.ts`.
+Plugins run the external CLI non-interactively in the workspace directory (`ctx.location.directory`), pass the task as a `--print` argument, and save output via `lib/save-output.ts`.
 
 ## Codebase graph (pitlane MCP)
 
@@ -66,9 +67,10 @@ Everything lives inside `.opencode/mcp/` — no global `~/.codex/config.toml` ch
 │   ├── pitlane.json  # MCP server def (legacy)
 │   ├── setup.sh      # idempotent install / index / verify / uninstall
 │   └── README.md
-├── tools/            # opencode plugin entry points for external CLIs
-│   ├── cli-codex.ts
+├── plugins/          # OpenCode V2 plugins (auto-discovered, register tools)
 │   └── cli-antigravity.ts
+├── tools/            # legacy OpenCode V1 tool files — NOT loaded by V2
+│   └── cli-codex.ts
 ├── outputs/          # Saved tool runs (Markdown, keyed by session)
 ├── .gitignore
 ├── opencode.json     # opencode configuration: provider, plugins, agents
@@ -82,7 +84,7 @@ Everything lives inside `.opencode/mcp/` — no global `~/.codex/config.toml` ch
 - The `$schema` URL for validation.
 - `default_agent`: `"Manager"`.
 - `mcp.pitlane`: the local pitlane-mcp code-graph server (shared `pitlane-mcp` binary in `~/.local/bin`, resolved via PATH — see `mcp/README.md`).
-- `agent`: agents are defined as markdown files in `agents/` — `Manager` with mode `primary`. Tool plugins (`cli-codex.ts`, `cli-antigravity.ts`) are auto-discovered from `tools/`.
+- `agent`: agents are defined as markdown files in `agents/` — `Manager` with mode `primary`. Plugins that register tools (`plugins/cli-antigravity.ts`) are auto-discovered from `plugins/`.
 
 ## Saving output
 
