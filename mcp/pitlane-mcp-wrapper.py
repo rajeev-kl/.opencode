@@ -15,7 +15,7 @@ Why this exists:
   -32601 Method not found and relays every other message transparently to the
   real binary (installed alongside as `pitlane-mcp-bin`).
 
-  Clients that never send `server/discover` (opencode, claude, codex) are
+  Clients that never send `server/discover` (opencode, codex) are
   unaffected — for them this is a pass-through relay.
 
 Installed by .opencode/mcp/setup.sh into ~/.local/bin/pitlane-mcp.
@@ -27,7 +27,7 @@ Environment injection:
   $VARS/${VARS} expanded, ~ expanded. Additionally, when
   PITLANE_EMBED_API_KEY_FILE is set and PITLANE_EMBED_API_KEY is not, the key
   is read from that file — so secrets stay out of the repo while every client
-  (opencode, claude, codex, agy relay) gets identical semantic-search config.
+  (opencode, codex, agy relay) gets identical semantic-search config.
 """
 import json
 import os

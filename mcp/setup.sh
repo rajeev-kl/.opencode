@@ -11,7 +11,7 @@
 #   ~/.local/bin/pitlane-mcp      python wrapper (this repo's pitlane-mcp-wrapper.py)
 #
 # The wrapper spawns `pitlane-mcp-bin` and answers `server/discover` itself so
-# agy (Antigravity CLI >= 1.1.14) can connect; opencode/claude/codex use it as
+# agy (Antigravity CLI >= 1.1.14) can connect; opencode/codex use it as
 # a transparent relay. See pitlane-mcp-wrapper.py in this directory.
 #
 # The graph index itself is runtime data under `~/.pitlane/indexes/` (keyed by
@@ -35,7 +35,7 @@
 # setup.sh syncs it to ~/.pitlane/env, where the pitlane-mcp wrapper picks it
 # up for every client; build_index sources it so CLI indexing embeds too. The
 # API key itself is resolved at runtime from PITLANE_EMBED_API_KEY_FILE
-# (default ~/.unsloth/harness.key) and never stored in this repo.
+# (default ~/.unsloth/harness-embed.key) and never stored in this repo.
 
 set -euo pipefail
 
@@ -125,7 +125,7 @@ detect_platform() {
 }
 
 # Make sure ~/.local/bin is on PATH (the wrapper spawns `pitlane-mcp-bin` bare;
-# opencode/claude/codex resolve `pitlane-mcp` bare — both must be found).
+# opencode/codex resolve `pitlane-mcp` bare — both must be found).
 ensure_local_bin_on_path() {
   case ":$PATH:" in
     *":$LOCAL_BIN:"*) return 0 ;;
@@ -226,7 +226,7 @@ build_index() {
 # Health check for the Unsloth Studio embedding server (:1235). Warn-only:
 # indexing/search degrade to BM25 when it is down, so this must not hard-fail.
 verify_embedding_server() {
-  local key_file="${PITLANE_EMBED_API_KEY_FILE:-$HOME/.unsloth/harness.key}"
+  local key_file="${PITLANE_EMBED_API_KEY_FILE:-$HOME/.unsloth/harness-embed.key}"
   local url="${PITLANE_EMBED_URL:-http://127.0.0.1:1235/v1/embeddings}"
   local base="${url%/v1/embeddings}"
   local kf
@@ -309,19 +309,6 @@ verify_integrations() {
     warn "opencode not found in PATH"
   fi
 
-  if command -v claude >/dev/null 2>&1; then
-    if [[ -f "$MCP_DIR/pitlane.json" ]] && \
-       echo "List the MCP tools from the pitlane server." | claude --print \
-         --mcp-config "$MCP_DIR/pitlane.json" 2>/dev/null | grep -q "pitlane"; then
-      log "claude: --mcp-config exposes pitlane tools"
-      ok=$((ok+1))
-    else
-      warn "claude: --mcp-config did not expose pitlane tools"
-    fi
-  else
-    warn "claude not found in PATH"
-  fi
-
   if command -v codex >/dev/null 2>&1; then
     warn "codex: configured via plugin -c override (no global config); verify in a session"
     ok=$((ok+1))
@@ -363,8 +350,7 @@ case "${1:-}" in
   build_index
     echo ""
     echo "  Done. pitlane-mcp is available to:"
-    echo "    - opencode  (Manager + subagents, via .opencode/opencode.json)"
-    echo "    - claude    (--mcp-config .opencode/mcp/pitlane.json)"
+    echo "    - opencode  (Manager, via .opencode/opencode.json)"
     echo "    - codex     (-c mcp_servers.pitlane.command=pitlane-mcp in the plugin)"
     echo "    - agy       (interactive via ~/.gemini/antigravity-cli/mcp_config.json;"
     echo "                 headless uses the discovery wrapper)"

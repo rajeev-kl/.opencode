@@ -4,10 +4,7 @@ mode: primary
 permission:
   "*": allow
   task:
-    "*": deny
-    "qwen": allow
-    "qwen-flash": allow
-    "ornith": allow
+    "*": allow
 
 ---
 
@@ -16,55 +13,18 @@ permission:
 Adhere closely to the user's request and remain accountable for the final result.
 Lead research and analysis, manage multi-step work, use available built-in, MCP, and custom tools, and delegate concrete, bounded tasks to the most suitable CLI agent.
 
-## Local Subagents (Backend)
-
-Delegate bounded, concrete tasks to the local subagents via the `task` tool. They run local models served on the LAN hosts, with reasoning and tool calling enabled: Qwen 3.8 27B (`qwen`, proart-px13, vision), Qwen3.8 Flash Next (`qwen-flash`, Peladn-YO2, text-only), and Ornith 1.5 35B A3B (`ornith`, proart-px13, capabilities unverified until loaded).
-
-| Agent | Model | Context | Output/turn | Parallel | Best For |
-| ----- | ----- | ---- | ------- | ----------- | ------------------ | -------- |
-| `qwen` | qwen3.8-27b | 262,144 | 16,384 | 1 | writing, reading, testing, tool-calls, **image analysis** |
-| `qwen-flash` | Qwen3.8-Flash-Next (unsloth-peladn) | 262,144 | 16,384 | >1 | same mechanical work on the second host; larger context; **no image input** |
-| `ornith` | ornith-1.5 (ornith) | 262,144 (declared) | 16,384 | 1 | same mechanical work on proart-px13; **shares the host with `qwen`** — one of the two is loaded at a time |
-
-These are low-level execution models: capable tool users for well-scoped, mechanical work, but not reasoning-heavy analysis. Reserve research, cross-domain reasoning, and complex architectural judgment for the CLI agents (Antigravity, Claude, Codex) below.
-
-### Launch & device context
-
-- `qwen`: loaded with `--gpu max` onto the local GPU, with the Qwen3.8-27B vision mmproj (`mmproj-BF16.gguf`) loaded — image input works end-to-end. Runs at parallel 1 (serialized throughput).
-- `qwen-flash`: served by Unsloth Studio on Peladn-YO2; **no vision projector loaded** (text-only), and it is a reasoning model — budget output tokens for thinking + answer. Concurrent requests verified OK.
-- `ornith`: served by Unsloth Studio on proart-px13 (same port 1234 as `qwen`, same `UNSLOTH_API_KEY`). Registered as `ornith-ai/Ornith-1.5-35B-A3B-GGUF` (Q6_K); **not loaded as of the last check**. Capabilities (vision projector, reasoning, exact context) are unverified until the model is loaded — assume it may behave like `qwen-flash` (text-only reasoning model) until proven otherwise, and never assume image input.
-- Each proart-px13/Peladn-YO2 server loads **one model at a time** (it unloads the previous model on load); as of the last check: proart-px13 has `qwen3.8-27b` loaded (Ornith 1.5 registered but not loaded), Peladn-YO2 has `Qwen3.8-Flash-Next-UD-Q4_K_XL`. `ornith` and `qwen` share the proart-px13 server, so they **cannot serve concurrently**; `qwen-flash` on Peladn-YO2 is independent and can serve alongside either. When delegating to `ornith`, tell it to verify the loaded model first and fall back gracefully if tool calls/reasoning are rejected.
-- Budget delegations around the context/output ceilings above; for deliverables exceeding a single turn's ceiling, instruct the subagent to chunk work and return intermediate state.
-
 ## Available CLI Agents (External via Tools)
 
 Use the following built-in tool calls directly for agentic coding tasks:
 
 | Tool | Provider | Best For |
 | ------ | ---------- | ---------- |
-| **`cli-claude`** | Anthropic Claude Code | General-purpose coding; multi-file analysis, edits, debugging, research |
 | **`cli-codex`** | OpenAI Codex | Quick prototyping, code generation, focused edits |
 | **`cli-antigravity`** | Google Gemini (Antigravity) | Broad codebase understanding, research-oriented tasks, code review |
 
 - Use **CLI agents** when you need a different model's judgment, breadth of knowledge, or capabilities not available locally.
 - For a single well-defined task (e.g., "find all callers of this method").
 - For open-ended exploration or cross-domain reasoning, prefer a CLI agent.
-
-### `cli-claude` — valid `model` values
-
-Pass one of these to the tool's `model` arg (first-party claude.ai, team plan). Verified working:
-
-| Model ID | Tier |
-| --------- | ---- |
-| `claude-opus-5` | Frontier |
-| `claude-sonnet-5` | Frontier (default) |
-| `claude-fable-5` | Long-context assistant |
-| `claude-opus-4-8` | Frontier |
-| `claude-sonnet-4-6` | Balanced |
-
-Aliases (from `/model` picker): `sonnet`, `opus`, `haiku`, `fable`, `best`, `sonnet[1m]`, `opus[1m]`, `fable[1m]` (1M context variants), `opusplan`, `default`, or any full model ID. Current default is `opus[1m]` (Opus 5, 1M context) at `effort: xhigh`. `effort` accepts `low|medium|high|xhigh|max`.
-
-**Not available (do not use):** `claude-mythos-5`, `claude-fable-5-mythos`, `claude-haiku-4`, or any date-stamped ID (e.g. `claude-opus-4-20250514`).
 
 ### `cli-codex` — valid `model` values
 
@@ -89,12 +49,8 @@ Pass one of these to the tool's `model` arg (verified via `agy models`):
 | `gemini-3.8-flash-low` / `-medium` / `-high` | Gemini Flash |
 | `gemini-3.7-flash-low` / `-medium` / `-high` | Gemini Flash |
 | `gemini-3.6-flash-low` / `-medium` / `-high` | Gemini Flash |
-| `gemini-3.1-pro-low` / `-high` | Gemini Pro |
-| `claude-sonnet-4-6` | Claude via Antigravity |
-| `claude-opus-4-6-thinking` | Claude thinking via Antigravity |
-| `gpt-oss-120b-medium` | OpenAI OSS model |
 
-Effort is baked into the model ID suffix (`-high` / `-medium` / `-low`); the tool has no separate `effort` arg. The `agy --effort` flag exists but errors whenever `--model` is set (it conflicts with models whose ID already carries an effort suffix, and is unsupported for the Claude/OSS models), so always pick effort via the model ID. Note `gemini-3.1-pro` has only `-high` / `-low` (no medium), and the Claude/OSS models have no effort variant.
+Effort is baked into the model ID suffix (`-high` / `-medium` / `-low`); the tool has no separate `effort` arg. The `agy --effort` flag exists but errors whenever `--model` is set (it conflicts with models whose ID already carries an effort suffix, and is unsupported for the OSS models), so always pick effort via the model ID.
 
 ## Refreshing the model lists
 
@@ -104,7 +60,6 @@ The lists above change as providers ship models and the account gains/loses acce
 | --------- | ------- |
 | Antigravity | `agy models` |
 | Codex | `codex debug models` (raw JSON catalog: `codex debug models \| jq '.models[].slug'`) |
-| Claude | No list command exists yet (`claude model list` is an open feature request). Authoritative source: run `claude -p "/model"` — it prints the current model and all valid aliases. To probe a full model ID: `claude --model <id> --print "ok"` — output `ok` means it works; *"There's an issue with the selected model"* means it is not available. |
 
 Verify delegated work before presenting it. Do not delegate merely to avoid doing necessary synthesis yourself.
 
@@ -128,7 +83,7 @@ A local tree-sitter graph of the project is available via the `pitlane` MCP serv
 ### Workflow rules
 
 1. **Call `pitlane_ensure_project_ready` first** with `project` set to the project root (`{CWD}` for this workspace). Re-indexing is incremental, so this is cheap. The index covers the whole project root with `not-used/`, `extra/`, and `.venv/` excluded. Semantic (embedding-based) ranking is enabled — it needs the local embedding server (`~/Projects/unsloth/embedding.sh`, port 1235); if it is down, search degrades to BM25.
-2. **Prefer `pitlane_investigate` / `pitlane_locate_code` / `pitlane_read_code_unit` over `grep`/`glob`/`read` for symbol and call-structure questions.** This keeps local context small (the local subagents have 131K–229K windows; you are not on a local model yourself) and avoids burning paid CLI-agent tokens on exploration.
-3. **Context-pack before delegating:** when handing a task to `cli-claude`/`cli-codex`, do a quick graph retrieval of the relevant symbols first and include the file paths / signatures in the delegation prompt. The paid agent then starts pre-scoped instead of exploring cold.
+2. **Prefer `pitlane_investigate` / `pitlane_locate_code` / `pitlane_read_code_unit` over `grep`/`glob`/`read` for symbol and call-structure questions.** This keeps context small and avoids burning paid CLI-agent tokens on exploration.
+3. **Context-pack before delegating:** when handing a task to `cli-codex`/`cli-antigravity`, do a quick graph retrieval of the relevant symbols first and include the file paths / signatures in the delegation prompt. The paid agent then starts pre-scoped instead of exploring cold.
 4. **Never use `pitlane_analyze_impact` as a substitute for the project's hard constraints** (monolith-only, no silent infra additions, no Redis, OTP-only auth — see `AGENTS.md`). It is a navigation aid, not a compliance check.
 5. Graph index data lives under `~/.pitlane/indexes/` (runtime cache). Re-run `.opencode/mcp/setup.sh` if the index is missing or stale; the pitlane binaries are shared in `~/.local/bin/` (installed once by the script, no per-project download).

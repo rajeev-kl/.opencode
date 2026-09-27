@@ -2,7 +2,7 @@
 
 Shared tree-sitter symbol + call-graph index served over MCP. One install per
 machine (`~/.local/bin/`), one index cache per project (`~/.pitlane/indexes/`),
-wired into opencode / claude / codex / agy.
+wired into opencode / codex / agy.
 
 ## Layout
 
@@ -38,13 +38,11 @@ environment so every client gets identical config.
 Hybrid ranking (vector + BM25) is enabled when an embedding endpoint is
 configured in `pitlane.env`. Current setup:
 
-- **Server:** Unsloth Studio instance on `127.0.0.1:1235` running Google
+- **Server:** local embedding server on `127.0.0.1:1235` running Google
   embeddinggemma-300M (Q8_0 GGUF, 768-dim). Launched by
-  `~/Projects/unsloth/embedding.sh` — start it **after** `qwen.sh`
-  (`qwen.sh` runs `unsloth studio stop`, which kills every Studio instance,
-  embedding server included).
-- **Auth:** single static key shared by both Studio instances; resolved at
-  runtime from `PITLANE_EMBED_API_KEY_FILE` (`~/.unsloth/harness.key`). Never
+  `~/Projects/unsloth/embedding.sh`.
+- **Auth:** single static key; resolved at runtime from
+  `PITLANE_EMBED_API_KEY_FILE` (`~/.unsloth/harness-embed.key`). Never
   commit key material to the repo.
 - **Prefixes:** embeddinggemma task instructions are passed via
   `PITLANE_EMBED_QUERY_PREFIX` / `PITLANE_EMBED_DOCUMENT_PREFIX`
@@ -59,7 +57,7 @@ CLI usage:
 
 ```bash
 set -a; source ~/.pitlane/env; set +a
-export PITLANE_EMBED_API_KEY="$(cat ~/.unsloth/harness.key)"
+export PITLANE_EMBED_API_KEY="$(cat ~/.unsloth/harness-embed.key)"
 pitlane search . "how does webhook intake work" --mode semantic
 ```
 
