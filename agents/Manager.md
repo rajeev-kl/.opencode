@@ -6,8 +6,6 @@ permission:
   task:
     "*": deny
     "qwen": allow
-    "qwen-flash": allow
-    "ornith": allow
 
 ---
 
@@ -18,22 +16,17 @@ Lead research and analysis, manage multi-step work, use available built-in, MCP,
 
 ## Local Subagents (Backend)
 
-Delegate bounded, concrete tasks to the local subagents via the `task` tool. They run local models served on the LAN hosts, with reasoning and tool calling enabled: Qwen 3.8 27B (`qwen`, proart-px13, vision), Qwen3.8 Flash Next (`qwen-flash`, Peladn-YO2, text-only), and Ornith 1.5 35B A3B (`ornith`, proart-px13, capabilities unverified until loaded).
+Delegate bounded, concrete tasks to the local subagents via the `task` tool. They run local models served on the LAN hosts, with reasoning and tool calling enabled: Qwen 3.8 27B (`qwen`, proart-px13, vision).
 
 | Agent | Model | Context | Output/turn | Parallel | Best For |
 | ----- | ----- | ---- | ------- | ----------- | ------------------ | -------- |
 | `qwen` | qwen3.8-27b | 262,144 | 16,384 | 1 | writing, reading, testing, tool-calls, **image analysis** |
-| `qwen-flash` | Qwen3.8-Flash-Next (unsloth-peladn) | 262,144 | 16,384 | >1 | same mechanical work on the second host; larger context; **no image input** |
-| `ornith` | ornith-1.5 (ornith) | 262,144 (declared) | 16,384 | 1 | same mechanical work on proart-px13; **shares the host with `qwen`** — one of the two is loaded at a time |
 
 These are low-level execution models: capable tool users for well-scoped, mechanical work, but not reasoning-heavy analysis. Reserve research, cross-domain reasoning, and complex architectural judgment for the CLI agents (Antigravity, Claude, Codex) below.
 
 ### Launch & device context
 
 - `qwen`: loaded with `--gpu max` onto the local GPU, with the Qwen3.8-27B vision mmproj (`mmproj-BF16.gguf`) loaded — image input works end-to-end. Runs at parallel 1 (serialized throughput).
-- `qwen-flash`: served by Unsloth Studio on Peladn-YO2; **no vision projector loaded** (text-only), and it is a reasoning model — budget output tokens for thinking + answer. Concurrent requests verified OK.
-- `ornith`: served by Unsloth Studio on proart-px13 (same port 1234 as `qwen`, same `UNSLOTH_API_KEY`). Registered as `ornith-ai/Ornith-1.5-35B-A3B-GGUF` (Q6_K); **not loaded as of the last check**. Capabilities (vision projector, reasoning, exact context) are unverified until the model is loaded — assume it may behave like `qwen-flash` (text-only reasoning model) until proven otherwise, and never assume image input.
-- Each proart-px13/Peladn-YO2 server loads **one model at a time** (it unloads the previous model on load); as of the last check: proart-px13 has `qwen3.8-27b` loaded (Ornith 1.5 registered but not loaded), Peladn-YO2 has `Qwen3.8-Flash-Next-UD-Q4_K_XL`. `ornith` and `qwen` share the proart-px13 server, so they **cannot serve concurrently**; `qwen-flash` on Peladn-YO2 is independent and can serve alongside either. When delegating to `ornith`, tell it to verify the loaded model first and fall back gracefully if tool calls/reasoning are rejected.
 - Budget delegations around the context/output ceilings above; for deliverables exceeding a single turn's ceiling, instruct the subagent to chunk work and return intermediate state.
 
 ## Available CLI Agents (External via Tools)
@@ -54,17 +47,19 @@ Use the following built-in tool calls directly for agentic coding tasks:
 
 Pass one of these to the tool's `model` arg (first-party claude.ai, team plan). Verified working:
 
-| Model ID | Tier |
-| --------- | ---- |
-| `claude-opus-5` | Frontier |
-| `claude-sonnet-5` | Frontier (default) |
-| `claude-fable-5` | Long-context assistant |
-| `claude-opus-4-8` | Frontier |
-| `claude-sonnet-4-6` | Balanced |
+| Alias | Model | Tier |
+| --------- | ---- | ---- |
+| `sonnet` | Sonnet 5 | Frontier (default) |
+| `opus` | Opus 5 | Frontier |
+| `haiku` | Haiku 5 | Fast |
+| `fable` | Fable 5 | Long-context assistant |
+| `sonnet[1m]` | Sonnet 5 (1M context) | Frontier |
+| `opus[1m]` | Opus 5 (1M context) | Frontier |
+| `fable[1m]` | Fable 5 (1M context) | Long-context assistant |
+| `best` | Best available | Auto-select |
+| `opusplan` | Opus 5 (planning) | Frontier |
 
-Aliases (from `/model` picker): `sonnet`, `opus`, `haiku`, `fable`, `best`, `sonnet[1m]`, `opus[1m]`, `fable[1m]` (1M context variants), `opusplan`, `default`, or any full model ID. Current default is `opus[1m]` (Opus 5, 1M context) at `effort: xhigh`. `effort` accepts `low|medium|high|xhigh|max`.
-
-**Not available (do not use):** `claude-mythos-5`, `claude-fable-5-mythos`, `claude-haiku-4`, or any date-stamped ID (e.g. `claude-opus-4-20250514`).
+Current default is `sonnet` (Sonnet 5) at `effort: high`. `effort` accepts `low|medium|high|xhigh|max`. Full model IDs (e.g. `claude-sonnet-5`, `claude-opus-5`) also work.
 
 ### `cli-codex` — valid `model` values
 
@@ -73,6 +68,9 @@ Pass one of these to the tool's `model` arg (ChatGPT login):
 | Model ID | Tier |
 | --------- | ---- |
 | `gpt-6-astra` | Most capable (coding, computer use, science) |
+| `gpt-6-sol` | Frontier agentic coding |
+| `gpt-6-luna` | Fast/cheap |
+| `gpt-reserve` | Reserve capacity |
 | `gpt-5.6-sol` | Frontier agentic coding |
 | `gpt-5.6-terra` | Balanced everyday work |
 | `gpt-5.6-luna` | Fast/cheap |
