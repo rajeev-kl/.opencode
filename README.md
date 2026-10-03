@@ -8,7 +8,7 @@ This config sets up a primary **Manager** agent (runs on the model selected for 
 
 This project is written in TypeScript and uses [Bun](https://bun.sh) as its runtime. The runtime dependencies are:
 
-- `@opencode-ai/plugin` -- opencode's plugin SDK (provides the `tool()` helper used to register CLI agents).
+- `@opencode/plugin` -- opencode's v2 plugin SDK (provides `Plugin.define` / `ctx.tool.transform` used to register CLI agents).
 - `bun:sqlite` -- Bun's built-in SQLite binding, used by `lib/save-output.ts` to look up session titles.
 - Node.js stdlib (`node:path`, `node:fs`) for file I/O and path handling.
 
@@ -35,13 +35,13 @@ Agent prompts are defined in `agents/Manager.md`, `agents/qwen.md`, `agents/qwen
 
 ## Plugins (CLI agents)
 
-Three opencode plugins register external coding agents that can be invoked as tools:
+One opencode v2 plugin (`plugins/cli-agents/`, id `cli-agents`) registers three external coding agents as tools:
 
-| Plugin | CLI binary | Description |
+| Tool | CLI binary | Description |
 | --- | --- | --- |
-| `tools/cli-claude.ts` | `claude` | Anthropic Claude Code. Accepts `prompt`, optional `model`, and `effort` (`low`/`medium`/`high`/`xhigh`/`max`). |
-| `tools/cli-codex.ts` | `codex` | OpenAI Codex CLI. Accepts `prompt` and optional `model`. Runs non-interactively with `--dangerously-bypass-approvals-and-sandbox --skip-git-repo-check --ephemeral`. |
-| `tools/cli-antigravity.ts` | `agy` | Google Antigravity (`agy`). Accepts `prompt` and optional `model`. Reasoning effort is encoded in the model ID suffix (e.g. `gemini-3.7-flash-high`); there is no separate effort arg. |
+| `cli-claude` | `claude` | Anthropic Claude Code. Accepts `prompt`, optional `model`, and `effort` (`low`/`medium`/`high`/`xhigh`/`max`). |
+| `cli-codex` | `codex` | OpenAI Codex CLI. Accepts `prompt` and optional `model`. Runs non-interactively with `--dangerously-bypass-approvals-and-sandbox --skip-git-repo-check --ephemeral`. |
+| `cli-antigravity` | `agy` | Google Antigravity (`agy`). Accepts `prompt` and optional `model`. Reasoning effort is encoded in the model ID suffix (e.g. `gemini-3.7-flash-high`); there is no separate effort arg. |
 
 All three plugins run the external CLI non-interactively in the current workspace directory, pipe the task as stdin or a `--print` argument, and save their output via `lib/save-output.ts`.
 
@@ -52,7 +52,7 @@ All three plugins run the external CLI non-interactively in the current workspac
 - **opencode** — `mcp.pitlane` in `opencode.json` (available to Manager and `qwen`)
 - **Claude Code** — `--mcp-config` in the `cli-claude` plugin
 - **Codex** — run-scoped `-c` override in the `cli-codex` plugin
-- **Antigravity** — registered via the `agy` discovery wrapper installed by `mcp/setup.sh` (see `cli-antigravity.ts`).
+- **Antigravity** — registered via the `agy` discovery wrapper installed by `mcp/setup.sh` (see `plugins/cli-agents/index.ts`).
 
 Everything lives inside `.opencode/mcp/` — no global `~/.claude.json` / `~/.codex/config.toml` changes. Run `.opencode/mcp/setup.sh` once per machine: it installs the shared binaries to `~/.local/bin/` (no per-project download) and indexes the project. See `mcp/README.md` for details.
 
@@ -81,10 +81,8 @@ Everything lives inside `.opencode/mcp/` — no global `~/.claude.json` / `~/.co
 │   ├── pitlane.json  # MCP server def for claude --mcp-config
 │   ├── setup.sh      # idempotent install / index / verify / uninstall
 │   └── README.md
-├── tools/            # opencode plugin entry points for external CLIs
-│   ├── cli-claude.ts
-│   ├── cli-codex.ts
-│   └── cli-antigravity.ts
+├── plugins/          # v2 plugin entry points (auto-discovered)
+│   └── cli-agents/index.ts  # registers cli-claude / cli-codex / cli-antigravity tools
 ├── outputs/          # Saved tool runs (Markdown, keyed by session)
 ├── .gitignore
 ├── opencode.json     # opencode configuration: provider, plugins, agents
@@ -100,7 +98,7 @@ Everything lives inside `.opencode/mcp/` — no global `~/.claude.json` / `~/.co
 - `provider.unsloth`: the local model provider (Qwen 3.8 27B), used **only** by the `qwen` subagent (npm package `@ai-sdk/openai-compatible`, local base URL, API key, and per-model capabilities/limits). The Manager never runs on this model.
 - `provider.ornith`: Ornith 1.5 35B A3B on the same `http://proart-px13.local:1234/v1/` endpoint and `{env:UNSLOTH_API_KEY}` as `unsloth`; used **only** by the `ornith` subagent.
 - `mcp.pitlane`: the local pitlane-mcp code-graph server (shared `pitlane-mcp` binary in `~/.local/bin`, resolved via PATH — see `mcp/README.md`).
-- `agent`: agents are defined as markdown files in `agents/` — `Manager` with mode `primary`, and the `qwen`, `qwen-flash`, and `ornith` subagents. Tool plugins (`cli-claude.ts`, `cli-codex.ts`, `cli-antigravity.ts`) are auto-discovered from `tools/`.
+- `agent`: agents are defined as markdown files in `agents/` — `Manager` with mode `primary`, and the `qwen`, `qwen-flash`, and `ornith` subagents. The CLI agent tools (`cli-claude`, `cli-codex`, `cli-antigravity`) are registered by `plugins/cli-agents/`.
 
 ## Saving output
 
