@@ -57,6 +57,24 @@ const antigravityInput = {
   additionalProperties: false,
 } as const
 
+const cursorInput = {
+  type: "object",
+  properties: {
+    prompt: {
+      type: "string",
+      minLength: 1,
+      description: "The complete task for Cursor",
+    },
+    model: {
+      type: "string",
+      description:
+        "Optional Cursor model ID — prefer Cursor-exclusive models unavailable via the other CLI tools (e.g. grok-4.7-high, cursor-grok-4.6-high, composer-2.5, muse-spark-1.3-high, kimi-k3-max, kimi-k2.7-code, glm-5.2-max, gpt-5.4-nano-low). Full list via `agent models`.",
+    },
+  },
+  required: ["prompt"],
+  additionalProperties: false,
+} as const
+
 export default Plugin.define({
   id: "cli-agents",
   async setup(ctx) {
@@ -157,6 +175,42 @@ export default Plugin.define({
             prompt: input.prompt,
             options: {
               command: "agy",
+              args: commandArgs,
+              cwd: directory,
+              signal: context.signal,
+            },
+          })
+          return { content }
+        },
+      })
+
+      editor.add({
+        name: "cli-cursor",
+        description:
+          "Run Cursor's authenticated agent (agent) non-interactively in the current workspace. It can inspect, edit, and execute commands. Prefer it for models unavailable via the other CLI tools: xAI Grok (grok-4.7-*, cursor-grok-4.6-*, cursor-grok-4.5-*), Cursor's own Composer (composer-2.5), Muse Spark (muse-spark-1.3-*), and open-weight models (kimi-k3-*, kimi-k2.7-code, glm-5.2-*). Full list via `agent models`.",
+        input: cursorInput,
+        execute: async (input: any, context: any) => {
+          const commandArgs = [
+            "-p",
+            "--output-format",
+            "text",
+            "--force",
+            "--trust",
+            "--approve-mcps",
+            "--workspace",
+            directory,
+          ]
+
+          if (input.model) commandArgs.push("--model", input.model)
+
+          commandArgs.push(input.prompt)
+
+          const content = await runCliAndSave({
+            toolName: "cli-cursor",
+            sessionID: context.sessionID,
+            prompt: input.prompt,
+            options: {
+              command: "agent",
               args: commandArgs,
               cwd: directory,
               signal: context.signal,

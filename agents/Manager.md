@@ -22,7 +22,7 @@ Delegate bounded, concrete tasks to the local subagents via the `task` tool. The
 | ----- | ----- | ---- | ------- | ----------- | ------------------ | -------- |
 | `qwen` | qwen3.8-27b | 262,144 | 16,384 | 1 | writing, reading, testing, tool-calls, **image analysis** |
 
-These are low-level execution models: capable tool users for well-scoped, mechanical work, but not reasoning-heavy analysis. Reserve research, cross-domain reasoning, and complex architectural judgment for the CLI agents (Antigravity, Claude, Codex) below.
+These are low-level execution models: capable tool users for well-scoped, mechanical work, but not reasoning-heavy analysis. Reserve research, cross-domain reasoning, and complex architectural judgment for the CLI agents (Antigravity, Claude, Codex, Cursor) below.
 
 ### Launch & device context
 
@@ -38,6 +38,7 @@ Use the following built-in tool calls directly for agentic coding tasks:
 | **`cli-claude`** | Anthropic Claude Code | General-purpose coding; multi-file analysis, edits, debugging, research |
 | **`cli-codex`** | OpenAI Codex | Quick prototyping, code generation, focused edits |
 | **`cli-antigravity`** | Google Gemini (Antigravity) | Broad codebase understanding, research-oriented tasks, code review |
+| **`cli-cursor`** | Cursor agent (`agent`) | Grok / Composer / Muse-Spark / open-weight models unavailable via the other CLIs |
 
 - Use **CLI agents** when you need a different model's judgment, breadth of knowledge, or capabilities not available locally.
 - For a single well-defined task (e.g., "find all callers of this method").
@@ -94,6 +95,23 @@ Pass one of these to the tool's `model` arg (verified via `agy models`):
 
 Effort is baked into the model ID suffix (`-high` / `-medium` / `-low`); the tool has no separate `effort` arg. The `agy --effort` flag exists but errors whenever `--model` is set (it conflicts with models whose ID already carries an effort suffix, and is unsupported for the Claude/OSS models), so always pick effort via the model ID. Note `gemini-3.1-pro` has only `-high` / `-low` (no medium), and the Claude/OSS models have no effort variant.
 
+### `cli-cursor` — valid `model` values
+
+Prefer `cli-cursor` for model families **not reachable** via `cli-claude` / `cli-codex` / `cli-antigravity` (verified via `agent models`, 250 entries 2026-10-07). Use the native tool when it exists: Claude Sonnet/Opus/Haiku/Fable → `cli-claude`; GPT-6 / GPT-5.6-sol/terra/luna / GPT-5.5 → `cli-codex`; Gemini 3.6/3.7/3.8-flash and 3.1-pro → `cli-antigravity`. Default is `auto` (router). Effort is baked into the model ID suffix (`-low` / `-medium` / `-high` / `-xhigh` / `-max`, plus `-fast` variants); there is no separate effort arg. Parameterized models also accept quoted bracket overrides, e.g. `--model 'claude-opus-4-8[context=1m,effort=high,fast=false]'`.
+
+| Model ID | Tier |
+| --------- | ---- |
+| `grok-4.7-low` / `-medium` / `-high` / `-xhigh` (+ `-fast`) | xAI Grok 4.7 flagship — Cursor-only |
+| `cursor-grok-4.6-low` / `-medium` / `-high` / `-xhigh` (+ `-fast`) | Cursor-hosted Grok 4.6 |
+| `cursor-grok-4.5-low` / `-medium` / `-high` (+ `-fast`) | Cursor-hosted Grok 4.5 |
+| `composer-2.5` (+ `-fast`) | Cursor's own Composer |
+| `muse-spark-1.3-minimal` / `-low` / `-medium` / `-high` / `-xhigh` / `-max` | Muse Spark 1.3 1M |
+| `kimi-k3-low` / `-high` / `-max`, `kimi-k2.7-code` | Moonshot open-weight (K3 + coding) |
+| `glm-5.2-high` / `-max` | Zhipu open-weight |
+| `auto` | Auto router (default; resolves per prompt) |
+
+The tool runs `agent -p --output-format text --force --trust --approve-mcps --workspace <dir>` — `--force`/`--trust`/`--approve-mcps` are the non-interactive equivalents of `--dangerously-skip-permissions` (allow edits, trust workspace, auto-approve MCP without prompting so the run never hangs).
+
 ## Refreshing the model lists
 
 The lists above change as providers ship models and the account gains/loses access. To re-fetch authoritative lists, run:
@@ -103,6 +121,7 @@ The lists above change as providers ship models and the account gains/loses acce
 | Antigravity | `agy models` |
 | Codex | `codex debug models` (raw JSON catalog: `codex debug models \| jq '.models[].slug'`) |
 | Claude | No list command exists yet (`claude model list` is an open feature request). Authoritative source: run `claude -p "/model"` — it prints the current model and all valid aliases. To probe a full model ID: `claude --model <id> --print "ok"` — output `ok` means it works; *"There's an issue with the selected model"* means it is not available. |
+| Cursor | `agent models` (same as `cursor-agent models`; `agent --list-models` also works) |
 
 Verify delegated work before presenting it. Do not delegate merely to avoid doing necessary synthesis yourself.
 
@@ -127,6 +146,6 @@ A local tree-sitter graph of the project is available via the `pitlane` MCP serv
 
 1. **Call `pitlane_ensure_project_ready` first** with `project` set to the project root (`{CWD}` for this workspace). Re-indexing is incremental, so this is cheap. The index covers the whole project root with `not-used/`, `extra/`, and `.venv/` excluded. Semantic (embedding-based) ranking is enabled — it needs the local embedding server (`~/Projects/unsloth/embedding.sh`, port 1235); if it is down, search degrades to BM25.
 2. **Prefer `pitlane_investigate` / `pitlane_locate_code` / `pitlane_read_code_unit` over `grep`/`glob`/`read` for symbol and call-structure questions.** This keeps local context small (the local subagents have 131K–229K windows; you are not on a local model yourself) and avoids burning paid CLI-agent tokens on exploration.
-3. **Context-pack before delegating:** when handing a task to `cli-claude`/`cli-codex`, do a quick graph retrieval of the relevant symbols first and include the file paths / signatures in the delegation prompt. The paid agent then starts pre-scoped instead of exploring cold.
+3. **Context-pack before delegating:** when handing a task to `cli-claude`/`cli-codex`/`cli-antigravity`/`cli-cursor`, do a quick graph retrieval of the relevant symbols first and include the file paths / signatures in the delegation prompt. The paid agent then starts pre-scoped instead of exploring cold.
 4. **Never use `pitlane_analyze_impact` as a substitute for the project's hard constraints** (monolith-only, no silent infra additions, no Redis, OTP-only auth — see `AGENTS.md`). It is a navigation aid, not a compliance check.
 5. Graph index data lives under `~/.pitlane/indexes/` (runtime cache). Re-run `.opencode/mcp/setup.sh` if the index is missing or stale; the pitlane binaries are shared in `~/.local/bin/` (installed once by the script, no per-project download).
