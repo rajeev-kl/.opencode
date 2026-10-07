@@ -87,10 +87,17 @@ function getSessionTitle(sessionID: string): string | null {
   try {
     const db = new Database(openCodeDbPath(), { readonly: true })
     try {
-      const row = db
+      // Current sessions live in session_v2 (title nullable); older rows
+      // remain in the legacy session table. Prefer v2, fall back to legacy.
+      const v2 = db
+        .query<{ title: string | null }, string>("SELECT title FROM session_v2 WHERE id = ?")
+        .get(sessionID)
+      const v2Title = v2?.title?.trim()
+      if (v2Title) return v2Title
+      const legacy = db
         .query<{ title: string }, string>("SELECT title FROM session WHERE id = ?")
         .get(sessionID)
-      return row?.title ?? null
+      return legacy?.title?.trim() || null
     } finally {
       db.close()
     }

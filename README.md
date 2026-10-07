@@ -96,4 +96,4 @@ Everything lives inside `.opencode/mcp/` — no global `~/.claude.json` / `~/.co
 
 ## Saving output
 
-When a CLI agent runs, its stdout/stderr is written to `outputs/<sanitized-session-title>/<tool-name>-<ISO-timestamp>.md`. Each file contains the session title/ID, tool name, timestamp, the original prompt, and the captured output. The Manager agent verifies delegated work before presenting results -- it should not delegate merely to avoid doing necessary synthesis itself (see `agents/Manager.md:91`).
+When a CLI agent runs, its stdout/stderr is written to `outputs/<sanitized-session-title>/<tool-name>-<ISO-timestamp>.md`. Each file contains the session title/ID, tool name, timestamp, the original prompt, and the captured output. The folder name is the human-readable opencode session title (looked up from `session_v2` in `opencode.db`, with legacy `session` as fallback); only when no title resolves does it fall back to the raw session ID. The Manager agent verifies delegated work before presenting results -- it should not delegate merely to avoid doing necessary synthesis itself (see `agents/Manager.md:91`).
