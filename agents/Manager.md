@@ -46,58 +46,56 @@ Use the following built-in tool calls directly for agentic coding tasks:
 
 ### `cli-claude` — valid `model` values
 
-Pass one of these to the tool's `model` arg (first-party claude.ai, team plan). Verified working:
+Pass one of these to the tool's `model` arg (first-party claude.ai, team plan). Verified working via `claude -p "/model"` on 2026-10-15 (current model: Haiku 5.5):
 
 | Alias | Model | Tier |
 | --------- | ---- | ---- |
-| `sonnet` | Sonnet 5 | Frontier (default) |
-| `opus` | Opus 5 | Frontier |
-| `haiku` | Haiku 5 | Fast |
-| `fable` | Fable 5 | Long-context assistant |
-| `sonnet[1m]` | Sonnet 5 (1M context) | Frontier |
-| `opus[1m]` | Opus 5 (1M context) | Frontier |
-| `fable[1m]` | Fable 5 (1M context) | Long-context assistant |
+| `sonnet` | Sonnet 5.5 | Frontier (default) |
+| `opus` | Opus 5.5 | Frontier |
+| `haiku` | Haiku 5.5 | Fast |
+| `fable` | Fable 5.x | Long-context assistant |
+| `sonnet[1m]` | Sonnet 5.5 (1M context) | Frontier |
+| `opus[1m]` | Opus 5.5 (1M context) | Frontier |
+| `fable[1m]` | Fable 5.x (1M context) | Long-context assistant |
 | `best` | Best available | Auto-select |
-| `opusplan` | Opus 5 (planning) | Frontier |
+| `opusplan` | Opus 5.5 (planning) | Frontier |
+| `default` | Account default | Auto-select |
 
-Current default is `sonnet` (Sonnet 5) at `effort: high`. `effort` accepts `low|medium|high|xhigh|max`. Full model IDs (e.g. `claude-sonnet-5`, `claude-opus-5`) also work.
+Current default is `sonnet` (Sonnet 5.5) at `effort: high`. `effort` accepts `low|medium|high|xhigh|max`. Full model IDs (e.g. `claude-sonnet-5-5`, `claude-opus-5-5`) also work.
 
 ### `cli-codex` — valid `model` values
 
-Pass one of these to the tool's `model` arg (ChatGPT login):
+Pass one of these to the tool's `model` arg (ChatGPT login). Verified via `codex debug models` on 2026-10-15 (9 slugs):
 
 | Model ID | Tier |
 | --------- | ---- |
+| `gpt-6.1-sol` | Newest frontier agentic coding |
 | `gpt-6-astra` | Most capable (coding, computer use, science) |
 | `gpt-6-sol` | Frontier agentic coding |
 | `gpt-6-luna` | Fast/cheap |
 | `gpt-reserve` | Reserve capacity |
-| `gpt-5.6-sol` | Frontier agentic coding |
-| `gpt-5.6-terra` | Balanced everyday work |
-| `gpt-5.6-luna` | Fast/cheap |
-| `gpt-5.5` | Frontier (complex coding/research) |
+| `gpt-5.6-sol` | Frontier agentic coding (previous gen) |
+| `gpt-5.6-terra` | Balanced everyday work (previous gen) |
+| `gpt-5.6-luna` | Fast/cheap (previous gen) |
 
 **Not a coding model:** `codex-auto-review` (internal review model) — do not pass it as `model`.
 
 ### `cli-antigravity` — valid `model` values
 
-Pass one of these to the tool's `model` arg (verified via `agy models`):
+Pass one of these to the tool's `model` arg (verified via `agy models` on 2026-10-15, 10 models):
 
 | Model ID | Tier |
 | --------- | ---- |
 | `gemini-3.8-flash-low` / `-medium` / `-high` | Gemini Flash |
-| `gemini-3.7-flash-low` / `-medium` / `-high` | Gemini Flash |
-| `gemini-3.6-flash-low` / `-medium` / `-high` | Gemini Flash |
-| `gemini-3.1-pro-low` / `-high` | Gemini Pro |
-| `claude-sonnet-4-6` | Claude via Antigravity |
-| `claude-opus-4-6-thinking` | Claude thinking via Antigravity |
+| `claude-opus-5-5-low` / `-medium` / `-high` | Claude Opus 5.5 via Antigravity |
+| `claude-sonnet-5-5-low` / `-medium` / `-high` | Claude Sonnet 5.5 via Antigravity |
 | `gpt-oss-120b-medium` | OpenAI OSS model |
 
-Effort is baked into the model ID suffix (`-high` / `-medium` / `-low`); the tool has no separate `effort` arg. The `agy --effort` flag exists but errors whenever `--model` is set (it conflicts with models whose ID already carries an effort suffix, and is unsupported for the Claude/OSS models), so always pick effort via the model ID. Note `gemini-3.1-pro` has only `-high` / `-low` (no medium), and the Claude/OSS models have no effort variant.
+Effort is baked into the model ID suffix (`-high` / `-medium` / `-low`); the tool has no separate `effort` arg. The `agy --effort` flag exists but errors whenever `--model` is set (it conflicts with models whose ID already carries an effort suffix, and is unsupported for the Claude/OSS models), so always pick effort via the model ID.
 
 ### `cli-cursor` — valid `model` values
 
-Prefer `cli-cursor` for model families **not reachable** via `cli-claude` / `cli-codex` / `cli-antigravity` (verified via `agent models`, 250 entries 2026-10-07). Use the native tool when it exists: Claude Sonnet/Opus/Haiku/Fable → `cli-claude`; GPT-6 / GPT-5.6-sol/terra/luna / GPT-5.5 → `cli-codex`; Gemini 3.6/3.7/3.8-flash and 3.1-pro → `cli-antigravity`. Default is `auto` (router). Effort is baked into the model ID suffix (`-low` / `-medium` / `-high` / `-xhigh` / `-max`, plus `-fast` variants); there is no separate effort arg. Parameterized models also accept quoted bracket overrides, e.g. `--model 'claude-opus-4-8[context=1m,effort=high,fast=false]'`.
+Prefer `cli-cursor` for model families **not reachable** via `cli-claude` / `cli-codex` / `cli-antigravity` (verified via `agent models`, 259 entries 2026-10-15). Use the native tool when it exists: Claude Sonnet/Opus/Haiku/Fable → `cli-claude`; GPT-6 / GPT-6.1 / GPT-5.6-sol/terra/luna → `cli-codex`; Gemini 3.8-flash → `cli-antigravity`. Default is `auto` (router). Effort is baked into the model ID suffix (`-low` / `-medium` / `-high` / `-xhigh` / `-max`, plus `-fast` variants); there is no separate effort arg. Parameterized models also accept quoted bracket overrides, e.g. `--model 'claude-opus-4-8[context=1m,effort=high,fast=false]'`.
 
 | Model ID | Tier |
 | --------- | ---- |
