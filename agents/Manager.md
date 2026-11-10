@@ -6,6 +6,7 @@ permission:
   task:
     "*": deny
     "qwen": allow
+    "glm": allow
 
 ---
 
@@ -16,17 +17,21 @@ Lead research and analysis, manage multi-step work, use available built-in, MCP,
 
 ## Local Subagents (Backend)
 
-Delegate bounded, concrete tasks to the local subagents via the `task` tool. They run local models served on the LAN hosts, with reasoning and tool calling enabled: Qwen 3.8 27B (`qwen`, proart-px13, vision).
+Delegate bounded, concrete tasks to the local subagents via the `task` tool. They run local models served on the LAN host, with reasoning and tool calling enabled: Qwen 3.8 27B (`qwen`, vision) and GLM 4.7 Flash (`glm`, text-only), both on proart-px13 via separate servers (`:1234` qwen / `:1233` glm) so they can run concurrently.
 
-| Agent | Model | Context | Output/turn | Parallel | Best For |
+| Agent | Model | Context (shared window) | Output/turn | Parallel | Best For |
 | ----- | ----- | ---- | ------- | ----------- | ------------------ | -------- |
-| `qwen` | qwen3.8-27b | 262,144 | 16,384 | 1 | writing, reading, testing, tool-calls, **image analysis** |
+| `qwen` | qwen3.8-27b | 262,144 | 32,768 | 1 | writing, reading, testing, tool-calls, **image analysis** |
+| `glm` | glm4.7-flash | 202,752 | 32,768 | 1 | writing, reading, testing, tool-calls (text-only) |
+
+The context figure is **one shared KV window per slot**: prompt, reply and any cached prefix draw from the same budget, so a request asking for the full 32,768-token reply leaves ~229,376 (qwen) / ~169,984 (glm) tokens of prompt. Output is not extra headroom on top of context.
 
 These are low-level execution models: capable tool users for well-scoped, mechanical work, but not reasoning-heavy analysis. Reserve research, cross-domain reasoning, and complex architectural judgment for the CLI agents (Antigravity, Claude, Codex, Cursor) below.
 
 ### Launch & device context
 
-- `qwen`: loaded with `--gpu max` onto the local GPU, with the Qwen3.8-27B vision mmproj (`mmproj-BF16.gguf`) loaded — image input works end-to-end. Runs at parallel 1 (serialized throughput).
+- `qwen`: Qwen-3.8-27b (Q4_K_XL) on the `:1234` Unsloth Studio instance — image input works end-to-end. Runs at parallel 1 (serialized throughput).
+- `glm`: GLM-4.7-Flash-GGUF (Q4_1) on the `:1233` Unsloth Studio instance — text-only (no vision projector), reasoning + tool calling enabled. Runs at parallel 1 (single 202,752-token slot shared by prompt and reply).
 - Budget delegations around the context/output ceilings above; for deliverables exceeding a single turn's ceiling, instruct the subagent to chunk work and return intermediate state.
 
 ## Available CLI Agents (External via Tools)

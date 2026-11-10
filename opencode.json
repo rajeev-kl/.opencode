@@ -1,52 +1,93 @@
 {
   "$schema": "https://opencode.ai/config.json",
   "default_agent": "Manager",
-  "provider": {
+  "providers": {
     "unsloth": {
-      "npm": "@ai-sdk/openai-compatible",
-      "name": "proart-px13",
-      "options": {
+      "name": "proart-px13 :1234 (Qwen)",
+      "package": "@opencode/ai/providers/openai-compatible",
+      "settings": {
         "baseURL": "http://proart-px13.local:1234/v1/",
         "apiKey": "{env:UNSLOTH_API_KEY}"
       },
       "models": {
         "qwen3.8-27b": {
           "name": "Qwen3.8-27b",
-          "attachment": true,
-          "reasoning": true,
-          "tool_call": true,
-          "temperature": true,
-          "modalities": {
-            "input": ["text", "image"],
-            "output": ["text"]
+          "capabilities": {
+            "tools": true,
+            "temperature": true,
+            "reasoning": {
+              "supported": true
+            },
+            "input": [
+              "text",
+              "image"
+            ],
+            "output": [
+              "text"
+            ]
           },
           "limit": {
             "context": 262144,
-            "output": 16384
+            "output": 32768
+          }
+        }
+      }
+    },
+    "unsloth-glm": {
+      "name": "proart-px13 :1233 (GLM)",
+      "package": "@opencode/ai/providers/openai-compatible",
+      "settings": {
+        "baseURL": "http://proart-px13.local:1233/v1/",
+        "apiKey": "{env:UNSLOTH_API_KEY}"
+      },
+      "models": {
+        "glm4.7-flash": {
+          "name": "GLM4.7-Flash",
+          "capabilities": {
+            "tools": true,
+            "temperature": true,
+            "reasoning": {
+              "supported": true
+            },
+            "input": [
+              "text"
+            ],
+            "output": [
+              "text"
+            ]
+          },
+          "limit": {
+            "context": 202752,
+            "output": 32768
           }
         }
       }
     }
   },
   "mcp": {
-    "pitlane": {
-      "type": "local",
-      "command": ["pitlane-mcp"],
-      "enabled": true
-    },
-    "linear": {
-      "type": "remote",
-      "url": "https://mcp.linear.app/mcp",
-      "enabled": true
-    },
-    "slack": {
-      "type": "local",
-      "command": ["npx", "-y", "@modelcontextprotocol/server-slack"],
-      "enabled": true,
-      "environment": {
-        "SLACK_BOT_TOKEN": "{env:SLACK_BOT_TOKEN}",
-        "SLACK_TEAM_ID": "{env:SLACK_TEAM_ID}",
-        "SLACK_CHANNEL_IDS": "{env:SLACK_CHANNEL_IDS}"
+    "servers": {
+      "pitlane": {
+        "type": "local",
+        "command": [
+          "pitlane-mcp"
+        ]
+      },
+      "linear": {
+        "type": "remote",
+        "url": "https://mcp.linear.app/mcp"
+      },
+      "slack": {
+        "type": "local",
+        "command": [
+          "npx",
+          "-y",
+          "@modelcontextprotocol/server-slack"
+        ],
+        "environment": {
+          "SLACK_BOT_TOKEN": "{env:SLACK_BOT_TOKEN}",
+          "SLACK_TEAM_ID": "{env:SLACK_TEAM_ID}",
+          "SLACK_CHANNEL_IDS": "{env:SLACK_CHANNEL_IDS}"
+        }
       }
     }
   }
